@@ -19,3 +19,8 @@
     - id: prompt-lab-ui
       name: dsh-prompt-lab/ui
       inject: [webServer]
+
+    # AI 能力独立依赖模型服务；缺失时管理与注入继续可用。
+    - id: prompt-lab-ai
+      name: dsh-prompt-lab/ai
+      inject: [llm, agentDefaultModel]

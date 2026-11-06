@@ -1,0 +1,139 @@
+{
+  "version": "0.6.0",
+  "releaseDate": "2026-11-07",
+  "timezone": "Asia/Hong_Kong",
+  "sourceTag": "v0.6.0",
+  "baselineTag": "v0.5.4",
+  "baselineCommit": "a77dc35",
+  "package": {
+    "filename": "dsh-prompt-lab-0.6.0.tgz",
+    "bytes": 93507,
+    "files": 26,
+    "sha256": "D99093DDF0C7416F63BC46CDBEBB0A8E7B5825637D043D9A422E3D9A952EC39E",
+    "extractedArchiveRuntimePassed": true,
+    "extractedStudioAdoptionPassed": true,
+    "actual054PackageReadsNewAssets": true
+  },
+  "verification": {
+    "syntaxFiles": 22,
+    "nodeTests": {
+      "failed": 0,
+      "skipped": 0,
+      "passed": 86
+    },
+    "plainTestEntryPassed": true,
+    "chromiumReactDOMPassed": true,
+    "viewportWidths": [
+      1200,
+      520,
+      360
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "aiFixtureCalls": 8,
+    "keyboardFocusAndEscapePassed": true,
+    "frozenInputsVisible": true,
+    "realHostVersion": "0.2.2-rc.1",
+    "realHostIsolationPassed": true,
+    "originalBackupRestoredWith049Package": true,
+    "initialModelGate": {
+      "verifiedAt": "2026-11-06T17:19:44.293Z",
+      "output": "PROMPT_LAB_MODEL_OK",
+      "maxTokens": 512,
+      "userDataFilesUnchanged": true
+    },
+    "realProductionModel": {
+      "ok": true,
+      "version": "0.6.0",
+      "verifiedAt": "2026-11-06T17:44:31.211Z",
+      "realHostModel": true,
+      "operations": [
+        {
+          "operation": "generate",
+          "status": "succeeded",
+          "route": {
+            "provider": "myapi",
+            "model": "workbuddy/cn:deepseek-v4.1-flash",
+            "reasoningEffort": "max"
+          },
+          "usage": {
+            "calls": 1,
+            "inputTokens": 538,
+            "outputTokens": 1154,
+            "cost": null
+          },
+          "ruleSuggestions": 0,
+          "questions": 2
+        },
+        {
+          "operation": "revise",
+          "status": "succeeded",
+          "route": {
+            "provider": "myapi",
+            "model": "workbuddy/cn:deepseek-v4.1-flash",
+            "reasoningEffort": "max"
+          },
+          "usage": {
+            "calls": 1,
+            "inputTokens": 917,
+            "outputTokens": 677,
+            "cost": null
+          },
+          "ruleSuggestions": 0,
+          "questions": 2
+        },
+        {
+          "operation": "extract",
+          "status": "succeeded",
+          "route": {
+            "provider": "myapi",
+            "model": "workbuddy/cn:deepseek-v4.1-flash",
+            "reasoningEffort": "max"
+          },
+          "usage": {
+            "calls": 1,
+            "inputTokens": 542,
+            "outputTokens": 1342,
+            "cost": null
+          },
+          "ruleSuggestions": 2,
+          "questions": 2
+        }
+      ],
+      "userDataFilesUnchanged": true,
+      "selectedUnchanged": true,
+      "configuredPromptUnchanged": true,
+      "profileCount": 3,
+      "ruleSetCount": 0
+    },
+    "live": {
+      "proof": {
+        "ok": true,
+        "version": "0.6.0",
+        "clientRevision": "40b82e3e05da",
+        "clientSourceMatched": true,
+        "profileCount": 3,
+        "ruleSetCount": 0,
+        "incrementalResponseBytes": 41,
+        "exportPassed": true,
+        "importPreviewPassed": true,
+        "previewDidNotChangeState": true
+      },
+      "freshStudioInstanceVerified": true,
+      "registeredModelCount": 61,
+      "userDataFilesUnchanged": true,
+      "configuredPromptUnchanged": true,
+      "backupDirectory": "C:/Users/yyyyyytd/.dsh/backups/prompt-lab-0.6.0-1793988042746",
+      "rollbackPackageVersion": "0.5.4"
+    }
+  },
+  "notes": [
+    "The initial real model call was verified before implementing the AI studio.",
+    "Live model tests used synthetic inputs only; only their three owned test jobs were removed.",
+    "This manifest is outside the npm files allowlist and the tgz it hashes.",
+    "The native DSH window was not directly automated; Chromium UI and live host API/model verification were separate.",
+    "No npm publication or remote git push was performed."
+  ]
+}

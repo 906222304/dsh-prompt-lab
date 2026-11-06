@@ -59,6 +59,7 @@ async function main() {
     const headers={'x-prompt-lab-ui':'1','content-type':'application/json'};
     const live=await fetch(origin+'/prompt-lab/api',{headers}); assert.equal(live.status,200);
     assert.equal((await live.json()).version,pluginVersion);
+    const studio=await fetch(origin+'/prompt-lab/api/studio',{headers});assert.equal(studio.status,200);assert.equal((await studio.json()).available,false);
     const exported=await fetch(origin+'/prompt-lab/api/export?kind=profile&id=default',{headers});
     const bundle=(await exported.json()).bundle;assert.equal(bundle.ruleSets.length,1);
     const preview=await fetch(origin+'/prompt-lab/api/import',{method:'POST',headers,body:JSON.stringify({action:'preview',bundle})});
@@ -70,6 +71,7 @@ async function main() {
     assert.equal(fs.existsSync(path.join(temporary,'CLAUDE.md')),false);
     await api.dispose();api=null;
     assert.equal((await fetch(origin+'/prompt-lab/api',{headers})).status,404);
+    assert.equal((await fetch(origin+'/prompt-lab/api/studio',{headers})).status,404);
     await web.dispose();web=null;
     await injection.dispose(); injection = null;
     assert.equal(state.snapshot().status.observerRegistered, false);
@@ -87,7 +89,7 @@ async function main() {
     await injection.dispose(); injection = null;
     assert.equal((await ctx.systemPrompt.assemble()).contexts.length, 1);
     console.log(JSON.stringify({ ok: true, hostVersion: version, node: process.version,
-      checks: ['dynamic two-section injection', 'saved profile', 'redact', 'process snapshot', 'shared rules and independent switches', 'real WebServer API/export/import/disposal', 'disabled injection with strip', 'dispose restores host'] }));
+      checks: ['dynamic two-section injection', 'saved profile', 'redact', 'process snapshot', 'shared rules and independent switches', 'real WebServer API/export/import/disposal', 'studio offline isolation and disposal', 'disabled injection with strip', 'dispose restores host'] }));
   } finally {
     await injection?.dispose();
     await api?.dispose();

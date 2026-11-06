@@ -1,6 +1,6 @@
 # 提示词（dsh-prompt-lab）
 
-> 版本：**0.5.4**；中文名：**提示词**；英文代号 `Prompt Lab`；包名 `dsh-prompt-lab`；页签 id `prompt-lab`。
+> 版本：**0.6.0**；中文名：**提示词**；英文代号 `Prompt Lab`；包名 `dsh-prompt-lab`；页签 id `prompt-lab`。
 
 DSH（DeepSeek Harness）的提示词面板：在**会话页签**里编辑、保存、切换配置，查看已保存预览与最近一次 text() 求值，
 在「设置 → 诊断」中检查本插件注入与过滤结果，并可对轨迹里那段
@@ -9,6 +9,10 @@ DSH（DeepSeek Harness）的提示词面板：在**会话页签**里编辑、保
 支持配置新建、复制、重命名、删除与 JSON 导入导出；共享规则库可被多套配置按顺序引用，
 正文段与规则段分别开关。保存带编辑版本，多窗口冲突返回 409 并保留草稿。
 
+**AI 创作**：用一句需求生成补充提示词，按反馈改写候选，从选定规范/反馈提取规则。复用 DSH 模型服务，
+显示差异、来源和待补充项；候选独立保存，勾选规则后另存新方案，不自动启用。支持取消、预算和最近 20 份本地历史。
+入口为“AI 创作”“按反馈优化”“AI 整理规则”。详见 [AI 工作台指南](docs/ai-studio.zh-CN.md)。
+
 0.5.2 参考 [Magpie](https://github.com/yetone/magpie) 的桌面界面设计，使用低对比灰阶、分组卡片、
 配置列表与编辑器分栏。管理操作收进菜单，预览信息按需展开，支持明暗主题和窄屏布局。
 0.5.3 将诊断收进设置，默认折叠；只显示本插件正文段、规则段和过滤结果。完整上下文分析可使用 `dsh-context`。
@@ -16,16 +20,16 @@ DSH（DeepSeek Harness）的提示词面板：在**会话页签**里编辑、保
 
 ## 组成
 
-一个 npm 包，落成两个 Cordis 插件行 + 一个浏览器 bundle：
+一个 npm 包，落成三个 Cordis 插件行 + 一个浏览器 bundle：
 
 | 组件（行 id / 包名） | 代码 | 依赖 | 职责 |
 | --- | --- | --- | --- |
 | `prompt-lab` / `dsh-prompt-lab` | `lib/index.js` | `systemPrompt` | 注册正文 `prompt-lab:custom`（5100）和规则 `prompt-lab:rules`（5101）两段，动态求值；观察组装并按设置处理上下文 |
-| `prompt-lab-ui` / `dsh-prompt-lab/ui` | `lib/ui.js` | `webServer` | 只注册一条路由 `/prompt-lab/api`：GET 取快照（支持增量），POST 保存/启用配置、更新设置 |
+| `prompt-lab-ui` / `dsh-prompt-lab/ui` | `lib/ui.js` | `webServer` | 本地快照、配置/规则、导入导出与 AI 任务接口 |
+| `prompt-lab-ai` / `dsh-prompt-lab/ai` | `lib/ai.js` | `llm`、`agentDefaultModel` | 提供独立辅助生成，复用模型路由与凭据，不启动工具执行 |
 | 浏览器端 `dsh.client` | `client.js` | `slots` | 注册 `conversation.view` 页签，含提示词与规则、规则库、导入导出、设置四个子页；诊断位于设置内，数据走本地接口 |
 
-拆两个行是为了让**依赖面互不牵连**：Cordis 的 `inject` 是硬依赖，合并后 `systemPrompt` 与
-`webServer` 必须同时就绪，任一缺失就整体不工作。分开后只开接口也能用，页面里两个开关互不影响。
+三条服务行分别声明依赖。模型服务未就绪时，配置管理、注入与组装观察继续可用。AI 功能在 DSH 0.2.2-rc.1 上完成真实验证；旧宿主缺少相应接口时显示 AI 未就绪。
 
 ## 数据流
 
@@ -41,11 +45,13 @@ DSH（DeepSeek Harness）的提示词面板：在**会话页签**里编辑、保
 
 | 请求 | 说明 |
 | --- | --- |
-| `GET /prompt-lab/api` | 返回版本、存储状态、配置、规则库、设置与进程快照；profiles/ruleSets 各项含编辑 version，轮询使用 revision（**无历史日志**） |
+| `GET /prompt-lab/api` | 返回版本、存储状态、配置、规则库、设置与进程快照；profiles/ruleSets 各项含编辑 version，revision 用于轮询，不包含 AI 历史 |
 | `GET /prompt-lab/api?since=<revision>` | 版本一致时只回 `{ok:true,unchanged:true,revision}`（实测 196 KiB → 0.04 KiB） |
 | `POST /prompt-lab/api` | body `{action:"save",id,prompt,rules,expectedVersion:1}`、`{action:"activate",id}` 或 `{action:"settings.update",contextFilter:"off"\|"strip"\|"redact", identityBreak?:boolean}`，返回新快照 |
 | `GET /prompt-lab/api/export?kind=all\|profile\|rule&id=...` | 导出已保存配置和所需规则，不含快照、求值、设置或运行时路径 |
 | `POST /prompt-lab/api/import` | `{action:"preview",bundle}` 校验并预览；`{action:"commit",bundle,expectedStoreVersion}` 一次性追加导入 |
+| `GET /prompt-lab/api/studio` | 返回 AI 能力、模型目录与最近任务；`?kind=job&id=...` 读取冻结输入和候选 |
+| `POST /prompt-lab/api/studio` | `start/cancel/adopt/clear/remove`；生成与资产保存分离，沿用同源 UI 请求校验 |
 
 配置动作支持 `create/duplicate/rename/delete/save/activate`（也支持 `profile.` 前缀）；规则动作支持
 `rule.create/rule.duplicate/rule.rename/rule.delete/rule.save`。
@@ -119,7 +125,7 @@ agent 身份句的文本匹配有关。本开关按已有匹配清单提供兼�
 
 ```powershell
 npm run check              # 运行时、测试与辅助脚本的语法检查
-npm run test               # node --test 跑用例（63 项）
+npm run test               # node --test 跑用例（86 项）
 npm run test:plain         # 直接执行测试文件（沙箱/受限环境下 node --test 可能 EPERM）
 npm run extract:purge-prompt  # 解密 dsh-purge 上游默认提示词到 references/
 npm pack --dry-run --json  # 核对发布清单
@@ -134,7 +140,7 @@ npm run test:rollback      # 需要本地 0.4.9 tgz，使用隔离夹具验证�
 `PROMPT_LAB_BROWSER_DEPS=<该目录/node_modules>` 后运行 `npm run test:browser`；可用
 `PROMPT_LAB_BROWSER` 指定 Chromium/Edge 可执行文件，用 `PROMPT_LAB_BROWSER_ARTIFACTS` 指定截图目录。
 该辅助测试需要 Node 22+ 和已安装浏览器，使用隔离用户目录；插件运行时仍为 Node 18+ 且无第三方依赖。
-当前界面、部署与回滚记录见 [0.5.4 交付记录](docs/release-0.5.4.md)，数据升级说明见 [0.5.1 交付记录](docs/release-0.5.1.md)。
+当前功能、模型验证、部署与回滚记录见 [0.6.0 交付记录](docs/release-0.6.0.md)，数据升级说明见 [0.5.1 交付记录](docs/release-0.5.1.md)。
 
 ## 排查
 
@@ -154,7 +160,7 @@ npm run test:rollback      # 需要本地 0.4.9 tgz，使用隔离夹具验证�
 
 - 面板展示的是 `text()` 返回值与组装事件快照，**不等于模型 API 最终请求正文**。
 - 启动时仅注册回调，不把配置预览记成已发生的宿主求值；快照作用域为整个进程。
-- 插件**不记录任何事件日志**：没有内存缓冲、不落磁盘、也不打印控制台（唯一输出是接口挂载成功时那一行
-  `[prompt-lab] UI registered`）。提示词全文只留在内存里的 `lastFullText` 与组装快照中，供面板读取。
+- 注入/组装观察不保存事件序列，最近求值和快照正文只留内存。AI 创作的冻结输入、来源、候选和采用状态另存本地 `studio/jobs`，保留最近 20 份，可由界面清除；不记录模型思考过程或整个聊天。
+- AI 生成成功只表示得到结构合法候选，效果尚未验证。试跑评测与完整版本历史属于后续阶段。
 - 组装快照正文的共享上限为 240000 个 UTF-16 单元；sections 和 contexts 都显示保留量、原长与截断标记。
 - `strip` 会把动态上下文**整组**去掉，包括审批策略这类功能性句子；想保留结构只遮数值请用 `redact`。

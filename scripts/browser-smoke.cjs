@@ -44,6 +44,20 @@ async function main() {
   const state=await import(pathToFileURL(path.join(project,'lib/state.js')).href);
   const plugin=await import(pathToFileURL(path.join(project,'lib/index.js')).href);
   const ui=await import(pathToFileURL(path.join(project,'lib/ui.js')).href);
+  const {registerBackend}=await import(pathToFileURL(path.join(project,'lib/studio/model.js')).href);
+  let studioMode='normal';const studioCalls=[];
+  const withdrawStudio=registerBackend({defaultRoute:()=>({provider:'fixture',model:'browser-model'}),providers:()=>[{id:'fixture',name:'Browser fixture'}],models:async()=>[{id:'browser-model',name:'Browser model'}],
+    async generate(options){
+      studioCalls.push(options);const input=JSON.parse(options.user).selectedData;
+      if(studioMode==='slow')await new Promise((resolve,reject)=>{const timer=setTimeout(resolve,3500);options.signal.addEventListener('abort',()=>{clearTimeout(timer);reject(options.signal.reason);},{once:true});});
+      if(studioMode==='invalid')return {text:'invalid response',route:options.route};
+      const data={name:input.operation==='extract'?'提取的团队规则':input.previousCandidate?'反馈改进方案':input.operation==='revise'?'精简后的维护方案':'AI 浏览器维护方案',
+        prompt:input.operation==='extract'?'':input.previousCandidate?'先定位代码并验证，简洁汇报结果。':input.operation==='revise'?'先定位代码，修改后验证；简洁交付。':'维护项目时先定位问题，再实施修改并验证。',
+        rules:input.operation==='extract'?'':'结果区分已验证和未验证。',
+        ruleSuggestions:[{action:'create',name:'AI 验证要求',text:'执行适用验证；无法执行时明确说明原因。',reason:'来自明确反馈',source:'改完验证',scope:'当前方案',conflict:'请与已有验证规则比较'}],
+        changes:['整理可执行目标'],assumptions:[],questions:['项目实际验证命令待补充']};
+      return {text:JSON.stringify(data),route:options.route,usage:{inputTokens:120,outputTokens:180}};
+    }});
   const sections=[], hooks={};
   plugin.apply({systemPrompt:{section(s){sections.push(s);}},on(name,fn){hooks[name]=fn;}},{prompt:'浏览器验收初始正文'});
   const html=`<!doctype html><meta charset="utf-8"><title>Prompt Lab ${pluginVersion} acceptance</title>
@@ -56,6 +70,7 @@ plugin.apply({effect:fn=>fn(),slots:{inject(name,fn){fn()},register(options,rend
     try {
       const route=new URL(req.url,'http://localhost').pathname;
       if(route.startsWith('/prompt-lab/api'))return await ui.handler(req,res);
+      if(route==='/qa/studio-mode'){studioMode=new URL(req.url,'http://localhost').searchParams.get('mode');res.writeHead(200);return res.end('ok');}
       if(route==='/qa/assemble') {
         const input={sections:sections.slice().sort((a,b)=>a.order-b.order).map(s=>({name:s.name,order:s.order,text:s.text({})})),contexts:[]};
         await hooks['system-prompt/assemble'](input,{},async()=>input);
@@ -111,6 +126,7 @@ plugin.apply({effect:fn=>fn(),slots:{inject(name,fn){fn()},register(options,rend
       return page.evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});const p=e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(p,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
     };
     const select=async(selector,value)=>{
+      await wait(()=>page.evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e||e.disabled)return false;if(e.getClientRects().length)return true;const name=${JSON.stringify(selector)}.includes('共享规则')?'data-rule-id':'data-profile-id';const b=document.querySelector('['+name+'="'+${JSON.stringify(value)}+'"]');return !!b&&!b.disabled&&b.getClientRects().length>0})()`),'selector ready '+selector);
       return page.evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e.getClientRects().length){const name=${JSON.stringify(selector)}.includes('共享规则')?'data-rule-id':'data-profile-id';document.querySelector('['+name+'="'+${JSON.stringify(value)}+'"]')?.click();return;}e.value=${JSON.stringify(value)};e.dispatchEvent(new Event('change',{bubbles:true}));})()`);
     };
     const text=()=>page.evaluate('document.body.innerText');
@@ -236,12 +252,76 @@ plugin.apply({effect:fn=>fn(),slots:{inject(name,fn){fn()},register(options,rend
     }
     await click('提示词与规则');await next();await click('设置');await next();
     assert.equal(await page.evaluate('document.querySelector(".pl-diagnostics").open'),false,'diagnostics collapsed on reentry');
+    await page.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'light'}]});
+    await page.call('Emulation.setDeviceMetricsOverride',{width:1200,height:1000,deviceScaleFactor:1,mobile:false});
+    await click('提示词与规则');await next();
+    const beforeAI=state.snapshot(),draftBeforeAI=await page.evaluate('document.querySelector("textarea.main").value');
+    await click('AI 创作');await wait(()=>page.evaluate('!!document.querySelector("#pl-ai-goal")'),'AI drawer mounted');
+    await fill('#pl-ai-goal','维护 Java 项目，中文，先定位再修改，改完验证。');await click('生成候选');
+    await wait(async()=>(await text()).includes('AI 浏览器维护方案'),'generated candidate');
+    assert.equal(state.snapshot().profiles.length,beforeAI.profiles.length);assert.equal(state.snapshot().ruleSets.length,beforeAI.ruleSets.length);
+    assert.equal(await page.evaluate('document.querySelector("textarea.main").value'),draftBeforeAI);
+    assert.equal(await page.evaluate('document.querySelector(".pl-studio-inputs").open'),false);
+    await page.evaluate('document.querySelector(".pl-studio-inputs>summary").click()');
+    assert.ok(await page.evaluate('document.querySelector(".pl-studio-inputs").innerText.includes("本次未带入当前草稿")'));
+    await page.evaluate('document.querySelector(".pl-studio-inputs>summary").click();document.querySelector(".pl-studio-head button").focus()');
+    await page.evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',shiftKey:true,bubbles:true,cancelable:true}))`);
+    assert.equal(await page.evaluate('document.activeElement.id'),'pl-ai-feedback','dialog backwards focus stays inside');
+    await page.evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true}))`);
+    assert.equal(await page.evaluate('document.activeElement.getAttribute("aria-label")'),'关闭 AI 创作','dialog forwards focus wraps');
+    await page.evaluate('document.querySelector("#pl-ai-goal").focus()');
+    for(const theme of ['light','dark'])for(const width of [1200,520,360]){
+      await page.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:theme}]});
+      await page.call('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});await next();
+      await page.evaluate('document.querySelector(".pl-studio-body").scrollTop=0');
+      assert.equal(await page.evaluate('document.querySelector(".pl-studio-body").scrollWidth<=document.querySelector(".pl-studio-body").clientWidth'),true,'AI drawer no horizontal overflow');
+      const shot=await page.call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifactDir,`${pluginVersion}-studio-${theme}-${width}.png`),Buffer.from(shot.data,'base64'));
+    }
+    await page.call('Emulation.setDeviceMetricsOverride',{width:1200,height:1000,deviceScaleFactor:1,mobile:false});
+    await click('查看原稿与候选差异');assert.equal(await page.evaluate('!!document.querySelector(".pl-diff")'),true);
+    await fill('[aria-label="候选修改反馈"]','再精简一版，不带入未选择的旧草稿。');await click('按反馈再改一版');
+    await wait(async()=>(await text()).includes('反馈改进方案'),'feedback candidate refinement');
+    assert.equal(JSON.parse(studioCalls.at(-1).user).selectedData.base.draft,null,'refinement does not silently send unselected current draft');
+    await click('另存为新方案');await wait(()=>state.snapshot().profiles.length===beforeAI.profiles.length+1,'AI atomic profile adoption');await next();
+    assert.equal(state.snapshot().ruleSets.length,beforeAI.ruleSets.length+1);assert.equal(state.snapshot().selected,beforeAI.selected);
+    assert.equal(await page.evaluate('document.querySelector("textarea.main").value'),draftBeforeAI);
+    await click('打开新方案');await next();assert.equal(await page.evaluate('!!document.querySelector(".pl-studio")'),false);
+    const aiProfile=state.snapshot().profiles.find(p=>p.name==='反馈改进方案');
+    await click('按反馈优化');await fill('#pl-ai-goal','更短，保留验证要求。');await click('生成候选');
+    await wait(async()=>(await text()).includes('精简后的维护方案'),'AI revise');
+    await click('仅替换正文与附加规则');await next();
+    assert.equal(state.snapshot().profiles.find(p=>p.id===aiProfile.id).prompt,aiProfile.prompt,'draft replacement has no disk write');
+    assert.equal(await page.evaluate('document.querySelector("textarea.main").value'),'先定位代码，修改后验证；简洁交付。');
+    await click('保存配置');await wait(()=>state.snapshot().profiles.find(p=>p.id===aiProfile.id).version===2,'save AI draft');await next();
+    await click('规则库');await next();await click('AI 整理规则');await fill('#pl-ai-goal','从反馈提取长期规则，排除一次性任务。');await fill('[aria-label="AI 所选材料"]','修改之后没有验证就宣称完成了；以后要说明验证情况。');
+    await click('生成候选');await wait(async()=>(await text()).includes('提取的团队规则'),'AI rule extraction');
+    const countBeforeExtract=state.snapshot().profiles.length,rulesBeforeExtract=state.snapshot().ruleSets.length;
+    await click('保存所选规则');await wait(()=>state.snapshot().ruleSets.length===rulesBeforeExtract+1,'adopt extracted rule');assert.equal(state.snapshot().profiles.length,countBeforeExtract);
+    await click('关闭 AI 创作');await click('提示词与规则');await next();
+    await page.evaluate(`fetch('/qa/studio-mode?mode=slow')`);await click('按反馈优化');await fill('#pl-ai-goal','生成期间继续编辑的保护验收');await click('生成候选');
+    await wait(()=>page.evaluate('document.querySelector(".pl-studio-status")?.textContent.includes("生成中")'),'slow job running');
+    await click('关闭 AI 创作');await fill('textarea.main','生成期间继续保留的手工草稿');await click('AI 创作');
+    await wait(async()=>(await text()).includes('当前配置或草稿已变化'),'late candidate stale marker');
+    assert.equal(await page.evaluate('document.querySelector("textarea.main").value'),'生成期间继续保留的手工草稿');
+    assert.equal(await page.evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='仅替换正文与附加规则').disabled`),true);
+    await fill('#pl-ai-goal','取消任务验收');await click('生成候选');await wait(()=>page.evaluate('document.querySelector(".pl-studio-status")?.textContent.includes("生成中")'),'cancellable job running');
+    await click('关闭 AI 创作');await click('AI 创作');await wait(()=>page.evaluate('document.querySelector(".pl-studio-status")?.textContent.includes("生成中")'),'active job restored');
+    await click('取消生成');await wait(()=>page.evaluate('document.querySelector(".pl-studio-status")?.textContent.includes("已取消")'),'AI cancelled');
+    await page.evaluate(`fetch('/qa/studio-mode?mode=invalid')`);await fill('#pl-ai-goal','错误输出保留原稿');await click('生成候选');
+    await wait(()=>page.evaluate('document.querySelector(".pl-studio-status")?.textContent.includes("生成失败")'),'invalid output failed after bounded repair');
+    assert.equal(await page.evaluate('document.querySelector("textarea.main").value'),'生成期间继续保留的手工草稿');
+    await click('关闭 AI 创作');withdrawStudio();await click('AI 创作');
+    await wait(async()=>(await text()).includes('AI 服务尚未就绪'),'AI offline state');
+    assert.equal(await page.evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='生成候选').disabled`),true);
+    await page.evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);await next();
+    assert.equal(await page.evaluate('!!document.querySelector(".pl-studio")'),false,'Escape closes the dialog');assert.equal(state.snapshot().selected,beforeAI.selected);
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({ok:true,version:pluginVersion,renderer:'Chromium + React 18 DOM',checks:['profile create/save/activate/copy/rename/delete with fallback','rule CRUD/disable/referenced delete protection','ordered references','legacy plus shared sections','409 draft protection','real JSON download and file import preview/commit','profile and rule draft remount recovery','1200/520/360px light and dark layouts','four management pages rendered','independent environment and compatibility settings','enabled compatibility status visible while collapsed','1200/360px light and dark detailed settings','collapsed diagnostics and own-section inspection','1200/360px light and dark diagnostics'],artifacts:artifactDir}));
+    console.log(JSON.stringify({ok:true,version:pluginVersion,renderer:'Chromium + React 18 DOM',checks:['existing profile/rule CRUD, conflict, import/export and draft recovery','responsive light/dark management and settings','AI generation, diff and atomic unactivated adoption','AI revise into draft then explicit save','AI rule extraction and selection adoption','late candidate never overwrites changed draft','close/reopen active AI task and cancellation','invalid output bounded repair and service unavailable','1200/520/360px light and dark AI drawer'],aiFixtureCalls:studioCalls.length,artifacts:artifactDir}));
   } catch(error) {
     if(page){try{console.error('UI at failure: '+await page.evaluate('document.body.innerText'));}catch{}}
     throw error;
   } finally {
+    withdrawStudio();
     if(rootCDP){try{await rootCDP.call('Browser.close');}catch{}rootCDP.socket.close();}
     page?.socket.close();child.kill();await new Promise(resolve=>server.close(resolve));
     if(oldHome===undefined)delete process.env.DSH_HOME;else process.env.DSH_HOME=oldHome;
