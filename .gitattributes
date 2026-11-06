@@ -1,0 +1,6 @@
+# 统一按 LF 存储，避免 Windows 上反复出现 CRLF 警告
+* text=auto eol=lf
+
+# 二进制
+*.png binary
+*.zip binary

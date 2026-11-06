@@ -1,0 +1,21 @@
+# v0.3 沿用原有 ID，切勿重复注册同名实例。
+- insert:
+    # 后端插件：把配置中的提示词注册为系统提示词段。
+    - id: prompt-lab
+      name: dsh-prompt-lab
+      inject: [systemPrompt]
+      config:
+        # 置为 false 可整体关闭提示词注入（插件本身仍会加载）。
+        enabled: true
+        # 仅用于首次运行时的默认配置正文；之后的编辑保存在 DSH_HOME/prompt-lab/profiles.json。
+        prompt: |
+          你是提示词面板的实用开发助手。
+          使用简体中文，优先给出准确、具体、可验证的方案。
+          先给结论，再解释关键依据；遇到不确定之处应明确说明。
+          不应仅凭猜测宣称已完成安装、执行或验证。
+
+    # 独立的本地 HTTP 接口插件：只依赖 webServer，
+    # 因此即使 Web 服务不可用，也不会影响上面提示词段的注册。
+    - id: prompt-lab-ui
+      name: dsh-prompt-lab/ui
+      inject: [webServer]

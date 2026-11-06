@@ -1,0 +1,12 @@
+# 依赖与构建产物
+node_modules/
+*.tgz
+npm-debug.log*
+*.log
+
+# 本机聊天导出（200 MB 级，非插件产物）
+ChatExport_*.zip
+
+# 系统垃圾
+.DS_Store
+Thumbs.db
