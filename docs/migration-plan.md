@@ -1,5 +1,8 @@
 # dsh-purge → prompt-lab 功能迁移计划
 
+> 历史草案：本文保留 0.4.2 当时的分析，不再作为当前实施基线。
+> 当前路线见 [下一步实施规划](next-step-plan.md)，0.4.9 实现与验证见 [变更记录](../CHANGELOG.md) 和 [宿主契约](host-contract.md)。
+
 > 状态：**草案，待评审**。本文只做方案，不改 prompt-lab 任何代码。
 > 基线：dsh-purge `1.1.71`（本机 `D:\private\github\dsh\plugin\dsh-purge`，`dshTarget: 0.2.0-rc.2`）
 > 与 prompt-lab `0.4.2`（`conversation.view` 页签 + `/prompt-lab/api`）。

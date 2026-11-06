@@ -102,7 +102,7 @@ window.__ModuleLoader__.load({
     // 后端状态阶段到界面文案的映射；键来自 lib/state.js 里 status.phase 的取值集合。
     const statusNames = {
       "not-started": "尚未启动", starting: "启动中", registered: "已注册",
-      disabled: "已关闭", "empty-prompt": "提示词为空", error: "注册错误", disposed: "已卸载",
+      disabled: "自定义注入已关闭", "empty-prompt": "提示词为空", error: "注册错误", disposed: "已卸载",
     };
     /**
      * 构建一张概览卡片。
@@ -134,6 +134,8 @@ window.__ModuleLoader__.load({
      * 挂载时机由宿主的页签切换决定（未选中的 View 不渲染），所以「进入页签 = 开始拉取，
      * 切走 = 卸载并停止轮询」。
      */
+    // 仅在当前模块内存保留一份未保存草稿，切走宿主页签后再回来可恢复；不写磁盘。
+    let retainedDraft = null;
     function Panel() {
       // —— 界面状态：只影响本组件的渲染 ——
       // 当前页签：profile（提示词与规则）/ assembly（组装快照）。
@@ -149,11 +151,30 @@ window.__ModuleLoader__.load({
       // 是否有保存/启用请求正在进行，用于禁用按钮、避免重复提交。
       const [saving, setSaving] = useState(false);
       // 编辑器当前编辑的配置 id；为空表示还没选定编辑目标。
-      const [editId, setEditId] = useState("");
+      const [editId, setEditId] = useState(() => retainedDraft?.id || "");
       // 编辑器里的提示词正文草稿：未保存的修改只存在于这里，不与宿主状态混在一起。
-      const [draft, setDraft] = useState("");
+      const [draft, setDraft] = useState(() => retainedDraft?.prompt || "");
       // 编辑器里的规则草稿（同样是本地草稿）。
-      const [ruleDraft, setRuleDraft] = useState("");
+      const [ruleDraft, setRuleDraft] = useState(() => retainedDraft?.rules || "");
+      const editor = useRef(retainedDraft ? { ...retainedDraft } : {
+        id: "", prompt: "", rules: "", savedPrompt: "", savedRules: "",
+      });
+      const lifecycle = useRef({ mounted: false, epoch: 0, mutating: false });
+      const isDirty = () => editor.current.prompt !== editor.current.savedPrompt
+        || editor.current.rules !== editor.current.savedRules;
+
+      function loadEditor(profile) {
+        editor.current = { id: profile.id, prompt: profile.prompt, rules: profile.rules,
+          savedPrompt: profile.prompt, savedRules: profile.rules };
+        retainedDraft = null;
+        setEditId(profile.id); setDraft(profile.prompt); setRuleDraft(profile.rules);
+      }
+
+      function edit(field, value) {
+        editor.current = { ...editor.current, [field]: value };
+        retainedDraft = isDirty() ? { ...editor.current } : null;
+        if (field === "prompt") setDraft(value); else setRuleDraft(value);
+      }
 
       // —— 轮询用的可变状态：放 ref 里，只影响「发不发请求」，不应触发重渲染 ——
       const inFlight = useRef(false);   // 是否有请求在途：慢接口下用它挡住重复请求
@@ -170,13 +191,16 @@ window.__ModuleLoader__.load({
        * 编辑器尚未初始化（editId 为空）时用当前启用配置填充草稿，让用户一进来就看到正文；
        * 已经在编辑时不覆盖草稿，避免轮询把用户输入冲掉。
        */
-      async function refresh() {
-        if (inFlight.current) return;
-        if (backoff.current > 0 && Date.now() - lastRun.current < backoff.current) return;
+      async function refresh(force = false) {
+        if (inFlight.current || lifecycle.current.mutating || !lifecycle.current.mounted) return;
+        if (force !== true && backoff.current > 0 && Date.now() - lastRun.current < backoff.current) return;
+        const epoch = lifecycle.current.epoch;
         inFlight.current = true;
         lastRun.current = Date.now();
         try {
           const result = await api("GET", undefined, revision.current);
+          // POST 开始就使旧 GET 失效；卸载后的响应也不能更新界面。
+          if (!lifecycle.current.mounted || epoch !== lifecycle.current.epoch) return;
           if (result.unchanged) {
             backoff.current = 0;
             setError("");
@@ -186,11 +210,12 @@ window.__ModuleLoader__.load({
           setData(result);
           setError("");
           backoff.current = 0;
-          if (!editId) {
+          if (!editor.current.id) {
             const p = result.profiles?.find((x) => x.id === result.selected);
-            if (p) { setEditId(p.id); setDraft(p.prompt); setRuleDraft(p.rules); }
+            if (p) loadEditor(p);
           }
         } catch (err) {
+          if (!lifecycle.current.mounted || epoch !== lifecycle.current.epoch) return;
           setError(String(err?.message || err));
           // 指数退避：首次失败 3s，之后翻倍，上限 30s；成功一次立即归零。
           backoff.current = Math.min(Math.max(backoff.current * 2, 3000), 30000);
@@ -201,19 +226,29 @@ window.__ModuleLoader__.load({
       // 挂载后立即拉取一次，之后每 3 秒轮询（没有开关：这个面板本身就是用来看实时状态的）。
       // 节拍固定 3 秒，但「这次要不要真的发请求」由 refresh() 里的 inFlight / 退避判断决定：
       // 增量轮询下状态没变时服务端只回几十字节，界面完全不动。
-      // 依赖只放 editId：让 refresh 闭包读到最新的 editId（它用 editId 判断要不要填充草稿）。
+      // 轮询只访问 ref，编辑目标改变不会重建定时器或使用过期闭包。
       useEffect(() => {
+        lifecycle.current.mounted = true;
         refresh();
         const timer = window.setInterval(refresh, 3000);
-        // 组件卸载时清理定时器，避免重复轮询。
-        return () => window.clearInterval(timer);
-      }, [editId]);
+        const beforeUnload = (event) => {
+          if (isDirty()) { event.preventDefault(); event.returnValue = ""; }
+        };
+        window.addEventListener("beforeunload", beforeUnload);
+        return () => {
+          lifecycle.current.mounted = false;
+          lifecycle.current.epoch += 1;
+          window.clearInterval(timer);
+          window.removeEventListener("beforeunload", beforeUnload);
+        };
+      }, []);
 
       /** 切换编辑器目标配置，并把该配置的正文与规则载入草稿（未保存的草稿会被丢弃）。 */
       function switchEditor(id) {
-        setEditId(id);
+        if (lifecycle.current.mutating || id === editor.current.id) return;
+        if (isDirty() && !window.confirm("放弃未保存的修改并切换配置？")) return;
         const profile = data?.profiles?.find((item) => item.id === id);
-        if (profile) { setDraft(profile.prompt); setRuleDraft(profile.rules); }
+        if (profile) loadEditor(profile);
       }
       /**
        * 提交变更。三类动作共用一条路径，成功后都用返回的快照刷新界面：
@@ -227,22 +262,32 @@ window.__ModuleLoader__.load({
        * @param {object} [extra] 随动作一起提交的附加字段。
        */
       async function mutate(action, extra = {}) {
+        if (lifecycle.current.mutating) return;
+        if (action === "activate" && isDirty()
+            && !window.confirm("放弃未保存的修改，并启用这套配置已保存的版本？")) return;
+        const submitted = { ...editor.current };
+        lifecycle.current.mutating = true;
+        lifecycle.current.epoch += 1;
         setSaving(true);
         try {
           const result = await api("POST", {
             action,
-            ...(action === "settings.update" ? extra : { id: editId, ...extra }),
-            ...(action === "save" ? { prompt: draft, rules: ruleDraft } : {}),
+            ...(action === "settings.update" ? extra : { id: submitted.id, ...extra }),
+            ...(action === "save" ? { prompt: submitted.prompt, rules: submitted.rules } : {}),
           });
+          if (!lifecycle.current.mounted) return;
           revision.current = Number(result.revision) || 0;
           setData(result);
           setError("");
-          if (action === "activate") {
-            const p = result.profiles?.find((x) => x.id === result.selected);
-            if (p) { setEditId(p.id); setDraft(p.prompt); setRuleDraft(p.rules); }
+          if (action === "activate" || action === "save") {
+            const p = result.profiles?.find((x) => x.id === submitted.id);
+            if (p) loadEditor(p);
           }
-        } catch (err) { setError(String(err?.message || err)); }
-        finally { setSaving(false); }
+        } catch (err) { if (lifecycle.current.mounted) setError(String(err?.message || err)); }
+        finally {
+          lifecycle.current.mutating = false;
+          if (lifecycle.current.mounted) setSaving(false);
+        }
       }
       // 派生数据：全部取自最近一次快照，缺数据时用空值兜底，保证首帧渲染不报错。
       const selected = data?.selected || "";                  // 当前启用的配置 id
@@ -255,7 +300,8 @@ window.__ModuleLoader__.load({
       const identityOn = data?.settings?.identityBreak === true;
       // 编辑器预览文本：与宿主端 lib/state.js 的 profileText() 拼装规则保持一致
       // （正文 + 可选的「## 当前规则集」段），因此预览看到的就是下一次注入会用的文本。
-      const profileText = [draft.trim(), ruleDraft.trim() && `## 当前规则集\n${ruleDraft.trim()}`].filter(Boolean).join("\n\n");
+      const profileText = draft.trim()
+        ? [draft.trim(), ruleDraft.trim() && `## 当前规则集\n${ruleDraft.trim()}`].filter(Boolean).join("\n\n") : "";
 
       // 面板骨架：头部 + 页签 + 概览卡片 + 正文（唯一滚动区）+ 页脚。
       // 这里先拼成一个 Fragment，返回时再交给宿主的视图区容器。
@@ -264,7 +310,7 @@ window.__ModuleLoader__.load({
         h("header", { className: "pl-head" },
           h("div", null, h("div", { className: "pl-title" }, "提示词 · Prompt Lab"),
             h("div", { className: "pl-sub" }, "系统提示词 · 配置 / 组装 / 过滤")),
-          h("div", { className: "pl-inline", style: { margin: 0 } }, btn("↻", refresh))),
+           h("div", { className: "pl-inline", style: { margin: 0 } }, btn("↻", () => refresh(true), "", saving))),
         // 面板内页签（三选一）。切换时顺带把组装快照的「展开全文」复位，避免串页残留。
         h("nav", { className: "pl-tabs" },
           ...[["profile", "提示词与规则"], ["assembly", "组装快照"], ["settings", "设置"]].map(([k, title]) =>
@@ -272,26 +318,27 @@ window.__ModuleLoader__.load({
           // 概览卡片：插件状态 / 当前配置 / 组装快照段数。
           h("div", { className: "pl-cards" },
             field("插件状态", statusNames[st.phase] || st.phase || "未知"),
-            field("当前规则集", activeProfile?.name || "未知"),
-            field("组装快照", assembly ? `${assembly.sectionCount} 段` : "尚未捕获")),
+            field("当前配置", activeProfile?.name || "未知"),
+            field("进程最近一次快照", assembly ? `${assembly.sectionCount} 段${assembly.stale ? " · 待新请求验证" : ""}` : "尚未捕获")),
           // 正文：唯一滚动区。错误条与「加载中」占位排在最上面，下面只渲染当前页签的内容。
           h("div", { className: "pl-body" },
             error ? h("div", { className: "pl-error" }, "请求失败：" + error) : null,
             !data ? h("div", { className: "pl-muted" }, "正在加载本地接口…") : null,
+            data && !st.observerRegistered ? h("p", { className: "pl-warning" }, "组装观察与过滤未就绪：请确认 prompt-lab 插件行已启用，且宿主暴露了组装事件。") : null,
             // —— 页签一：提示词与规则编辑 ——
             tab === "profile" && data ? h(React.Fragment, null,
               h("p", { className: "pl-warning" }, "参考 dsh-purge 的配置优先级与规则集管理；这里的规则是追加到提示词的普通文本，不会修改 DSH 的 AGENTS.md、CLAUDE.md 或宿主代码。"),
               // ① 选择要编辑的配置；右侧标记它是否就是当前启用项。
               h("div", { className: "pl-inline" },
                 h("strong", null, "选择编辑的配置"),
-                h("select", { className: "pl-select", value: editId, onChange: (e) => switchEditor(e.target.value) },
+                h("select", { className: "pl-select", value: editId, disabled: saving, onChange: (e) => switchEditor(e.target.value) },
                   ...(data.profiles || []).map((p) => h("option", { value: p.id, key: p.id }, p.name))),
                 h("span", { className: "pl-muted" }, selected === editId ? "● 当前启用" : "未启用")),
               // ② 两个文本域就是这份配置的全部内容：系统提示词正文 + 追加规则。
               h("label", { className: "pl-field" }, "系统提示词正文"),
-              h("textarea", { className: "pl-textarea", value: draft, spellCheck: false, onChange: (e) => setDraft(e.target.value) }),
+              h("textarea", { className: "pl-textarea", value: draft, disabled: saving, spellCheck: false, onChange: (e) => edit("prompt", e.target.value) }),
               h("label", { className: "pl-field" }, "附加规则（自然语言，每行一条）"),
-              h("textarea", { className: "pl-textarea rules", value: ruleDraft, spellCheck: false, onChange: (e) => setRuleDraft(e.target.value) }),
+              h("textarea", { className: "pl-textarea rules", value: ruleDraft, disabled: saving, spellCheck: false, onChange: (e) => edit("rules", e.target.value) }),
               // ③ 保存 / 启用；两个动作都只影响下一次 text() 求值，不改变已发出的请求。
               h("div", { className: "pl-inline", style: { marginTop: 12 } },
                 // 正文为空或正在保存时禁止提交。
@@ -299,11 +346,22 @@ window.__ModuleLoader__.load({
                 // 已是当前启用项时无需重复启用。
                 btn("启用这套配置", () => mutate("activate"), "", saving || selected === editId),
                 h("span", { className: "pl-muted" }, "保存后下次 text() 求值使用新配置；修改已发请求无效")),
+              h("p", { className: "pl-muted" }, isDirty() ? "有未保存修改；切走宿主页签后，草稿会保留在本次页面内存中。" : "草稿与载入版本一致"),
               h("details", { className: "pl-details" },
-                h("summary", null, "预览编辑器当前的完整提示词"), h("pre", { className: "pl-pre" }, profileText))) : null,
+                h("summary", null, "预览编辑器当前的完整提示词"), h("pre", { className: "pl-pre" }, profileText)),
+              h("details", { className: "pl-details" },
+                h("summary", null, `已保存的当前配置预览 · 版本 ${data.configRevision}`),
+                h("pre", { className: "pl-pre" }, data.configuredPrompt || "（空）")),
+              h("details", { className: "pl-details" },
+                h("summary", null, data.evaluation
+                  ? `最近一次 text() 求值 · ${data.evaluation.evaluatedAt} · 版本 ${data.evaluation.configRevision}${data.evaluation.stale ? " · 配置已变化" : ""}`
+                  : "最近一次 text() 求值：尚未观察到"),
+                h("pre", { className: "pl-pre" }, data.evaluation?.text || "（空或尚未求值；不代表模型已接收）"))) : null,
             // —— 页签二：组装快照 ——
             tab === "assembly" && data ? h(React.Fragment, null,
-              h("p", { className: "pl-warning" }, "这是 system-prompt/assemble 事件的观察快照，不保证已包含之后所有处理，更不能直接证明模型 API 最终请求正文。内容可能敏感。"),
+              h("p", { className: "pl-warning" }, "这是进程最近一次 system-prompt/assemble 观察快照，可能来自其他会话；事件后仍可能有宿主处理，不等于模型 API 最终请求。"),
+              assembly?.stale ? h("p", { className: "pl-warning" }, "配置或设置已变化；以下保留旧快照，待新请求验证。") : null,
+              assembly?.processingFailed ? h("p", { className: "pl-warning" }, "本次插件处理失败，返回了未处理结果。") : null,
               h("label", { className: "pl-inline" },
                 h("input", { type: "checkbox", checked: showText, onChange: (e) => setShowText(e.target.checked) }),
                 " 展开显示完整提示词段"),
@@ -311,9 +369,9 @@ window.__ModuleLoader__.load({
               // 尚未捕获到组装事件时给出可操作提示。
               !assembly ? h("p", { className: "pl-muted" }, "尚未观察到组装事件。请新建 DSH 会话并发送一次消息，再刷新；若仍无快照说明当前宿主没有向本插件暴露该事件。") :
                 h(React.Fragment, null,
-                  h("p", { className: "pl-muted" }, "观察时间：" + assembly.capturedAt + " ｜段数：" + assembly.sectionCount + (assembly.truncated ? " ｜因长度上限被截断" : "") + (assembly.identityBroken > 0 ? " ｜指纹脱敏 " + assembly.identityBroken + " 处" : "")),
+                  h("p", { className: "pl-muted" }, "观察时间：" + assembly.capturedAt + " ｜配置版本：" + assembly.configRevision + " ｜段数：" + assembly.sectionCount + (assembly.truncated ? " ｜因长度上限被截断" : "") + (assembly.identityBroken > 0 ? " ｜指纹脱敏 " + assembly.identityBroken + " 处" : "")),
                   ...(assembly.sections || []).map((s) => h("details", { className: "pl-details", key: s.index, open: showText },
-                    h("summary", null, `#${s.index + 1} ${s.name} / order=${s.order ?? "?"} / ${s.chars} 字`),
+                    h("summary", null, `#${s.index + 1} ${s.name} / order=${s.order ?? "?"} / ${s.retainedChars}/${s.chars} 字${s.truncated ? "（已截断）" : ""}`),
                     h("pre", { className: "pl-pre" }, s.text || "（空）"))),
                   // 动态上下文（“Current runtime context …”那段）：显示过滤后的最终形态。
                   h("p", { className: "pl-inline", style: { marginTop: 14 } },
@@ -324,11 +382,11 @@ window.__ModuleLoader__.load({
                       }[assembly.contextFilter] || assembly.contextFilter)
                       + (assembly.contextsRemoved > 0 ? " ｜本次去除 " + assembly.contextsRemoved + " 条" : ""))),
                   ...(assembly.contexts || []).map((cx) => h("details", { className: "pl-details", key: "cx" + cx.index },
-                    h("summary", null, `${cx.name} / ${cx.chars} 字`),
+                    h("summary", null, `${cx.name} / ${cx.retainedChars}/${cx.chars} 字${cx.truncated ? "（已截断）" : ""}`),
                     h("pre", { className: "pl-pre" }, cx.text || "（空）"))))) : null,
             // —— 页签三：设置 ——
             tab === "settings" && data ? h(React.Fragment, null,
-              h("p", { className: "pl-warning" }, "过滤只作用于之后的新请求：模型收到的快照与轨迹里记录的都是过滤后的版本；已入库的历史不会回改。"),
+              h("p", { className: "pl-warning" }, "设置在之后的组装中使用，已入库的历史不会回改；最终请求仍可能经过宿主的后续处理。"),
               h("div", { className: "pl-inline" },
                 h("strong", null, "运行时上下文过滤"),
                 h("select", {
@@ -338,7 +396,7 @@ window.__ModuleLoader__.load({
                   h("option", { value: "off" }, "关闭（原样注入）"),
                   h("option", { value: "strip" }, "去除（整段不发给模型）"),
                   h("option", { value: "redact" }, "脱敏（保留结构，遮路径/地址/时间）")),
-                h("span", { className: "pl-muted" }, saving ? "保存中…" : "改动立即生效并落盘")),
+                h("span", { className: "pl-muted" }, saving ? "保存中…" : "已保存设置在之后的组装中使用")),
               h("details", { className: "pl-details", open: true },
                 h("summary", null, "两种模式分别适合什么时候用"),
                 h("p", { style: { margin: "6px 0" } },
@@ -356,7 +414,7 @@ window.__ModuleLoader__.load({
                   h("option", { value: "off" }, "关闭"),
                   h("option", { value: "on" }, "开启（身份句插零宽空格）")),
                 h("span", { className: "pl-muted" },
-                  (assembly?.identityBroken > 0 ? "上次命中 " + assembly.identityBroken + " 处 ｜" : "") + (saving ? "保存中…" : "改动立即生效并落盘"))),
+                  (assembly?.identityBroken > 0 ? "上次命中 " + assembly.identityBroken + " 处 ｜" : "") + (saving ? "保存中…" : "已保存设置在之后的组装中使用"))),
               h("details", { className: "pl-details", open: true },
                 h("summary", null, "渠道指纹脱敏是干什么的（WorkBuddy 400 / 11128）"),
                 h("p", { style: { margin: "6px 0" } },
@@ -366,17 +424,18 @@ window.__ModuleLoader__.load({
                 h("p", { style: { margin: "6px 0" }, className: "pl-muted" },
                   "只处理系统提示词（sections + contexts）；若历史消息里复述过这些句子（assistant 角色），本层覆盖不到，需要换新会话或让中转层处理。")),
               h("details", { className: "pl-details" },
-                h("summary", null, "当前会话最近一次捕获的上下文形态"),
+                h("summary", null, "进程最近一次捕获的上下文形态"),
+                assembly?.stale ? h("p", { className: "pl-muted" }, "这是旧配置的观察结果，待新请求验证。") : null,
                 !assembly ? h("p", { className: "pl-muted" }, "还没有组装快照：发送一条消息后再回来看。")
                   : h("pre", { className: "pl-pre" },
                     (assembly.contexts || []).map((cx) => cx.text).join("\n\n") || "（空：没有上下文贡献，或已整组去除）")),
               h("details", { className: "pl-details" },
                 h("summary", null, "设置存在哪"),
                 h("p", { className: "pl-muted", style: { margin: "6px 0" } },
-                  "DSH_HOME/prompt-lab/settings.json（原子写、权限 0600），重启后仍然生效；删掉该文件即回到默认“关闭”。"))) : null),
+                  "DSH_HOME/prompt-lab/settings.json（原子写），重启后仍然生效；删掉该文件即回到默认“关闭”。"))) : null),
           // 页脚：左侧点明能力边界（只读观察 + 显式保存配置），右侧是这份快照的生成时间。
           h("footer", { className: "pl-foot" },
-            h("span", null, "本地只读观察 + 显式配置保存"),
+            h("span", null, "配置管理 · 进程级组装观察"),
             h("span", null, data ? timeText(data.generatedAt) : "未连接")));
       // 宿主把本组件渲染在 conversation.view 的视图区里（.viewArea 是 flex:1 的纵向容器），
       // 这里只负责填满它：显示 / 隐藏由宿主的页签切换决定，组件自己不判断是否可见。

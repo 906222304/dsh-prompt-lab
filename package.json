@@ -1,6 +1,6 @@
 {
   "name": "dsh-prompt-lab",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "description": "提示词（Prompt Lab）：DeepSeek Harness 的系统提示词面板——会话页签内剖开实际注入内容与组装快照，管理多套配置，可切除脱敏",
   "type": "module",
   "main": "lib/index.js",
@@ -13,7 +13,10 @@
     "lib",
     "client.js",
     "cordis.patch.yml",
-    "references"
+    "references/README.zh-CN.md",
+    "references/dsh-client-slots.md",
+    "CHANGELOG.md",
+    "docs/host-contract.md"
   ],
   "keywords": [
     "dsh",
@@ -40,9 +43,10 @@
     }
   },
   "scripts": {
-    "check": "node --check lib/index.js && node --check lib/state.js && node --check lib/ui.js && node --check lib/redact.js && node --check client.js && node --check tests/plugin.test.mjs",
+    "check": "node --check lib/index.js && node --check lib/state.js && node --check lib/ui.js && node --check lib/redact.js && node --check client.js && node --check tests/plugin.test.mjs && node --check tests/stability.test.mjs && node --check tests/client.test.mjs && node --check scripts/extract-dsh-purge-prompt.mjs && node --check scripts/host-smoke.cjs",
     "test": "node --test tests/*.test.mjs",
-    "test:plain": "node tests/plugin.test.mjs",
+    "test:plain": "node tests/plugin.test.mjs && node tests/stability.test.mjs && node tests/client.test.mjs",
+    "test:host": "node scripts/host-smoke.cjs",
     "extract:purge-prompt": "node scripts/extract-dsh-purge-prompt.mjs"
   },
   "engines": {

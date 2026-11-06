@@ -5,7 +5,7 @@
       name: dsh-prompt-lab
       inject: [systemPrompt]
       config:
-        # 置为 false 可整体关闭提示词注入（插件本身仍会加载）。
+        # 置为 false 只关自定义提示词注入；组装观察、过滤与配置编辑仍可用。
         enabled: true
         # 仅用于首次运行时的默认配置正文；之后的编辑保存在 DSH_HOME/prompt-lab/profiles.json。
         prompt: |

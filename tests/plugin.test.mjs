@@ -368,7 +368,8 @@ test('ensureInitialized is a no-op once the state is initialized', () => {
   const after = snapshot();
   assert.equal(after.revision, before.revision);
   assert.equal(after.selected, before.selected);
-  assert.equal(after.assembly, before.assembly);
+  // snapshot 返回副本；无操作应保留内容，而不是要求两份副本引用相同。
+  assert.deepEqual(after.assembly, before.assembly);
 });
 
 // 浏览器端模块的第一层校验：Node 侧路由注册成功，且前端模块的插槽契约没有变。

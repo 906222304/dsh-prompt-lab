@@ -1,8 +1,9 @@
 # dsh-purge 参考默认提示词：本地解密导出
 
-本文件夹不预置第三方项目的完整默认提示词原文。可使用随包脚本从 `dsh-purge` 公开仓库中的加密资源生成本地 Markdown：
+npm 发布包不包含第三方项目的完整默认提示词原文。源码检出目录可能已有本地参考原文，0.4.9 不删除该文件，
+但通过显式发布清单排除它。源码仓库中的辅助脚本可从 `dsh-purge` 公开仓库的加密资源生成本地 Markdown；脚本不随 npm 包发布。
 
-**在线下载并解密**（PowerShell，在插件根目录）：
+**在线下载并解密**（PowerShell，在源码检出目录）：
 
 ```powershell
 npm run extract:purge-prompt
@@ -11,7 +12,7 @@ npm run extract:purge-prompt
 **已经下载 `dsh-purge` 源码时**，可离线解密：
 
 ```powershell
-npm run extract:purge-prompt -- 'D:\private\github\dsh\plugin\prompt-lab'
+npm run extract:purge-prompt -- 'D:\private\github\dsh\plugin\dsh-purge'
 ```
 
 成功之后，同目录生成 `dsh-purge-default-prompt.md`，可以用 VS Code 直接查看。不会自动导入或启用，也不会改变提示词面板的配置。若想测试，可将原文自行粘贴到提示词面板的提示词编辑器，并在授权环境内验证。
