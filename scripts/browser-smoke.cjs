@@ -189,12 +189,28 @@ plugin.apply({effect:fn=>fn(),slots:{inject(name,fn){fn()},register(options,rend
     }
     await page.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'light'}]});
     await page.call('Emulation.setDeviceMetricsOverride',{width:1200,height:1000,deviceScaleFactor:1,mobile:false});
-    for(const [label,file] of [['规则库','rules'],['导入导出','transfer'],['设置','settings'],['组装快照','assembly']]) {
+    for(const [label,file] of [['规则库','rules'],['导入导出','transfer'],['设置','settings']]) {
       await click(label);await next();
       const screenshot=await page.call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifactDir,`${pluginVersion}-${file}-light.png`),Buffer.from(screenshot.data,'base64'));
     }
+    assert.equal(await page.evaluate('document.querySelector(".pl-diagnostics").open'),false,'diagnostics collapsed by default');
+    assert.equal((await text()).includes('prompt-lab:custom'),false,'diagnostic body hidden');
+    await page.evaluate('document.querySelector(".pl-diagnostics>summary").click()');await next();
+    assert.ok((await text()).includes('可能来自其他会话'));
+    assert.equal(await page.evaluate('document.querySelectorAll("[data-diagnostic-section]").length'),2);
+    await page.evaluate('document.querySelector("[data-diagnostic-section]>summary").click()');await next();
+    assert.ok((await text()).includes('prompt-lab:custom'));
+    for(const theme of ['light','dark']) for(const width of [1200,360]) {
+      await page.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:theme}]});
+      await page.call('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});await next();
+      await page.evaluate('document.querySelector(".pl-diagnostics").scrollIntoView({block:"end"})');
+      assert.equal(await page.evaluate('document.querySelector(".pl-body").scrollWidth<=document.querySelector(".pl-body").clientWidth'),true,'diagnostic no horizontal overflow');
+      const screenshot=await page.call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifactDir,`${pluginVersion}-diagnostics-${theme}-${width}.png`),Buffer.from(screenshot.data,'base64'));
+    }
+    await click('提示词与规则');await next();await click('设置');await next();
+    assert.equal(await page.evaluate('document.querySelector(".pl-diagnostics").open'),false,'diagnostics collapsed on reentry');
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({ok:true,version:pluginVersion,renderer:'Chromium + React 18 DOM',checks:['profile create/save/activate/copy/rename/delete with fallback','rule CRUD/disable/referenced delete protection','ordered references','legacy plus shared sections','409 draft protection','real JSON download and file import preview/commit','profile and rule draft remount recovery','1200/520/360px light and dark layouts','all five pages rendered'],artifacts:artifactDir}));
+    console.log(JSON.stringify({ok:true,version:pluginVersion,renderer:'Chromium + React 18 DOM',checks:['profile create/save/activate/copy/rename/delete with fallback','rule CRUD/disable/referenced delete protection','ordered references','legacy plus shared sections','409 draft protection','real JSON download and file import preview/commit','profile and rule draft remount recovery','1200/520/360px light and dark layouts','four management pages rendered','collapsed diagnostics and own-section inspection','1200/360px light and dark diagnostics'],artifacts:artifactDir}));
   } catch(error) {
     if(page){try{console.error('UI at failure: '+await page.evaluate('document.body.innerText'));}catch{}}
     throw error;

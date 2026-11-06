@@ -464,10 +464,10 @@ test('frontend registers the conversation View tab with its options', () => {
   assert.equal(tree.props.className, 'pl-view');
   assert.equal(collect(tree, (n) => hasClass(n, 'pl-button-float') || hasClass(n, 'pl-dock')).length, 0);
   assert.equal(collect(tree, (n) => n.props['aria-label'] === '面板停靠位置').length, 0);
-  // 三个内部页签：提示词与规则 / 组装快照 / 设置。
+  // 四个管理页签；诊断收在设置页内。
   assert.deepEqual(
     collect(tree, (n) => hasClass(n, 'pl-tab')).map((n) => n.children.find(child => child?.type === 'span').children[0]),
-    ['提示词与规则', '规则库', '导入导出', '组装快照', '设置'],
+    ['提示词与规则', '规则库', '导入导出', '设置'],
   );
   // 日志行结构与「自动刷新」勾选框都不应再出现在树里。
   assert.equal(collect(tree, (n) => hasClass(n, 'pl-row')).length, 0);

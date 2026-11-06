@@ -203,11 +203,12 @@ test('manual refresh bypasses backoff and reports stale process snapshots accura
   h.button('↻').props.onClick();
   const sample = initial(2);
   sample.assembly = { scope: 'process', stale: true, configRevision: 1,
-    capturedAt: 'time', sectionCount: 0, sections: [], truncated: true,
+    capturedAt: 'time', sectionCount: 1,
+    sections: [{ name: 'prompt-lab:custom', retainedChars: 2, chars: 9, text: 'ab', truncated: true }], truncated: true,
     contexts: [{ index: 0, name: 'cwd', retainedChars: 2, chars: 9, text: 'ab', truncated: true }],
   };
   h.requests.at(-1).respond(sample); await h.flush();
-  h.button('组装快照').props.onClick(); await h.flush();
+  h.button('设置').props.onClick(); await h.flush();
   assert.ok(h.allText.includes('可能来自其他会话'));
   assert.ok(h.allText.includes('待新请求验证'));
   assert.ok(h.allText.includes('2/9 字（已截断）'));
@@ -231,4 +232,33 @@ test('configuration tools are disclosed and searching preserves the current draf
   assert.equal(h.button('新建配置'), undefined);
   assert.equal(h.textarea().props.value, '保留这份草稿');
   h.unmount();
+});
+
+test('diagnostics start collapsed in settings and show only Prompt Lab observations', async () => {
+  const h = panelHarness(), sample = initial();
+  sample.assembly = { scope: 'process', stale: false, configRevision: 1, capturedAt: 'time',
+    sections: [
+      { name: 'official:identity', text: '其他插件正文', retainedChars: 6, chars: 6 },
+      { name: 'prompt-lab:custom', text: '本插件正文', retainedChars: 5, chars: 5 },
+      { name: 'prompt-lab:rules', text: '本插件规则', retainedChars: 5, chars: 5 },
+    ], contexts: [{ name: 'cwd', text: '其他上下文原文' }], contextFilter: 'strip', contextsRemoved: 3, contextCount: 0, identityBroken: 2 };
+  await h.start(sample);
+  assert.equal(h.button('组装快照'), undefined);
+  assert.equal(h.find(n => n.props['aria-label'] === 'Prompt Lab 诊断'), undefined);
+  h.button('设置').props.onClick(); await h.flush();
+  assert.equal(h.find(n => n.props['aria-label'] === 'Prompt Lab 诊断').props.open, undefined);
+  for (const value of ['本插件正文', '本插件规则', '去除 3 条', '命中 2 处']) assert.ok(h.allText.includes(value));
+  for (const value of ['其他插件正文', '其他上下文原文']) assert.ok(!h.allText.includes(value));
+  h.unmount();
+});
+
+test('diagnostics distinguish missing observations from failed processing', async () => {
+  for (const failed of [false, true]) {
+    const h = panelHarness(), sample = initial();
+    if (failed) sample.assembly = { capturedAt: 'time', configRevision: 1, processingFailed: true, sections: [], contexts: [] };
+    await h.start(sample); h.button('设置').props.onClick(); await h.flush();
+    assert.ok(h.allText.includes(failed ? '不能确认过滤已生效' : '尚未观察到组装'));
+    assert.ok(!h.allText.includes('本次上下文过滤'));
+    h.unmount();
+  }
 });

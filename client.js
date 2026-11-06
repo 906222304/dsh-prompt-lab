@@ -46,6 +46,7 @@ window.__ModuleLoader__.load({
 .pl-library-layout{display:grid;grid-template-columns:218px minmax(0,1fr);gap:22px;align-items:start}.pl-library-editor{padding:22px}.pl-library-editor>.pl-field:first-child{margin-top:0}.pl-library-editor .pl-textarea{min-height:300px}.pl-library-editor .pl-select{width:100%}.pl-library-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding-top:20px;margin-top:20px;border-top:1px solid var(--pl-line)}.pl-library-actions .pl-btn.accent{margin-left:auto}.pl-library-ref{font-size:11px;color:var(--pl-muted);line-height:1.7;margin-top:14px}.pl-library-more{position:relative}.pl-library-more>summary{list-style:none}.pl-library-more>summary::-webkit-details-marker{display:none}.pl-library-more[open]>.pl-menu-actions{position:absolute;bottom:40px;left:0;width:240px;padding:10px;border:1px solid var(--pl-line);border-radius:9px;background:var(--pl-paper);box-shadow:0 8px 24px #0002;z-index:8}.pl-transfer-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.pl-transfer-card{padding:24px;min-width:0}.pl-transfer-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:var(--pl-pill);margin-bottom:17px}.pl-transfer-card h2{font-size:14px;font-weight:600;margin-bottom:7px}.pl-transfer-card p{font-size:12px;color:var(--pl-muted);line-height:1.8;margin-bottom:20px}.pl-file-input{font-size:11px;max-width:100%;width:100%;color:var(--pl-muted)}.pl-file-input::file-selector-button{border:1px solid var(--pl-line);background:var(--pl-pill);color:var(--pl-text);padding:7px 10px;border-radius:6px;margin-right:8px;font:inherit;cursor:pointer}.pl-import-preview{margin-top:18px;padding:22px}.pl-import-preview h3{font-size:14px;margin-bottom:7px}.pl-import-preview p{font-size:12px;color:var(--pl-muted);margin-bottom:10px}.pl-setting-group{border:1px solid var(--pl-line);border-radius:12px;background:var(--pl-paper);overflow:hidden;margin-bottom:18px}.pl-setting-row{padding:20px 22px;display:flex;align-items:center;gap:25px}.pl-setting-row+.pl-setting-row{border-top:1px solid var(--pl-line)}.pl-setting-copy{min-width:0;flex:1}.pl-setting-copy h2{font-size:13px;font-weight:550}.pl-setting-copy p{font-size:11px;color:var(--pl-muted);margin-top:4px;max-width:590px;line-height:1.7}.pl-setting-row .pl-select{max-width:210px;font-size:11px;flex:none}.pl-setting-note{font-size:11px;color:var(--pl-muted);padding:0 3px;line-height:1.8}
 @container(max-width:850px){.pl-workspace,.pl-library-layout{grid-template-columns:minmax(0,1fr)}.pl-collection{display:none}.pl-mobile-picker{display:flex;align-items:center;gap:8px;margin-bottom:14px}.pl-mobile-picker>.pl-select{flex:1;width:100%}.pl-editor-section{padding:19px}.pl-editor-head{padding:18px 19px}.pl-divider{margin:0 19px}.pl-library-editor{padding:20px}.pl-actionbar{padding:13px 19px}.pl-transfer-grid{grid-template-columns:1fr}}
 @container(max-width:500px){.pl-head{padding:16px 16px 12px}.pl-tabs{padding:0 16px 13px;gap:4px}.pl-tab{padding:6px 9px;font-size:11px;gap:5px}.pl-tab svg{width:12px;height:12px}.pl-body{padding:20px 15px 24px}.pl-title{font-size:15px}.pl-connection{display:none}.pl-page-heading{margin-bottom:15px}.pl-page-heading h1{font-size:17px}.pl-editor-head{flex-wrap:wrap;gap:8px}.pl-editor-head-actions{width:100%;justify-content:space-between}.pl-editor-section{padding:16px}.pl-divider{margin:0 16px}.pl-manage{margin-left:auto}.pl-actionbar{padding:12px 16px}.pl-actionbar .pl-save-state{width:100%;margin-bottom:2px}.pl-actionbar .pl-btn{flex:1}.pl-setting-row{padding:17px 18px;align-items:flex-start;gap:13px;flex-direction:column}.pl-setting-row .pl-select{width:100%;max-width:100%}.pl-foot{padding:8px 16px}.pl-cards{grid-template-columns:1fr}.pl-card+.pl-card{border-left:0;border-top:1px solid var(--pl-line)}.pl-transfer-card{padding:20px}.pl-section-meta{gap:8px}.pl-library-actions .pl-btn{flex:1}.pl-library-editor{padding:17px}.pl-rule-list .pl-inline{flex-wrap:wrap}.pl-rule-list .pl-inline>span{flex-basis:100%;margin-bottom:3px}}
+.pl-diagnostics{margin-top:24px}.pl-diagnostics>summary{display:flex;align-items:center;gap:10px}.pl-diagnostics>summary::before{content:'▸';color:var(--pl-muted);font-size:10px}.pl-diagnostics[open]>summary::before{content:'▾'}.pl-diagnostics>summary .pl-kicker{margin-left:auto}.pl-diagnostics .pl-setting-note{padding:0;margin-bottom:12px}.pl-diagnostics .pl-notice{margin:12px 0}.pl-diagnostic-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 0;font-size:11px;flex-wrap:wrap}.pl-diagnostic-row+.pl-diagnostic-row{border-top:1px solid var(--pl-line)}.pl-diagnostic-row>span:first-child{font-weight:550;flex:none}.pl-diagnostic-row>span:last-child{color:var(--pl-muted);overflow-wrap:anywhere}.pl-diagnostics .pl-pre{margin-top:10px}
 @media(prefers-reduced-motion:reduce){.pl-view *{transition:none!important}}
 `;
 
@@ -289,7 +290,7 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * 会话页签里的主面板：配置、规则库、导入导出、组装快照和设置。
+     * 会话页签里的主面板：配置、规则库、导入导出和设置；诊断收在设置内。
      *
      * 组件自身不持有业务状态：展示的内容都是最近一次 GET /prompt-lab/api 的快照，
      * 编辑动作再 POST 回同一接口；真正的状态在宿主进程侧的 lib/state.js 里。
@@ -300,10 +301,8 @@ window.__ModuleLoader__.load({
     let retainedDraft = null;
     function Panel() {
       // —— 界面状态：只影响本组件的渲染 ——
-      // 当前页签：profile（提示词与规则）/ assembly（组装快照）。
+      // 日常管理页签；组装观察仅作为设置页内的折叠诊断。
       const [tab, setTab] = useState("profile");
-      // 组装快照页签下是否展开每个段的完整正文（勾选框，切换页签时复位）。
-      const [showText, setShowText] = useState(false);
 
       // —— 数据状态：最近一次快照，以及编辑器的草稿 ——
       // 最近一次成功获取到的快照；null 表示尚未拿到数据。
@@ -502,7 +501,7 @@ window.__ModuleLoader__.load({
       const st = data?.status || {};                          // 宿主侧状态：阶段、注册结果、提示词字数等
       const assembly = data?.assembly;                        // 最近一次组装观察快照，可能尚未捕获
       const activeProfile = data?.profiles?.find((p) => p.id === selected);
-      // 上下文过滤模式（设置页签的可选项与组装页签的状态徽标都用它）。
+      // 当前设置与最近观察结果分开展示，避免把配置值当作已生效证据。
       const filterMode = data?.settings?.contextFilter || "off";
       // 渠道指纹脱敏开关（与上下文过滤独立、可叠加）。
       const identityOn = data?.settings?.identityBreak === true;
@@ -514,7 +513,7 @@ window.__ModuleLoader__.load({
         editor.current.rulesEnabled && [ruleDraft.trim() && `## 当前规则集\n${ruleDraft.trim()}`, ...sharedRules].filter(Boolean).join("\n\n")].filter(Boolean).join("\n\n");
 
       const editProfile = data?.profiles?.find(p => p.id === editId);
-      const tabs = [["profile", "提示词与规则", "document"], ["rules", "规则库", "layers"], ["transfer", "导入导出", "transfer"], ["assembly", "组装快照", "activity"], ["settings", "设置", "settings"]];
+      const tabs = [["profile", "提示词与规则", "document"], ["rules", "规则库", "layers"], ["transfer", "导入导出", "transfer"], ["settings", "设置", "settings"]];
       const content = h(React.Fragment, null,
         h("header", { className: "pl-head" },
           h("div", { className: "pl-brand" }, h("div", { className: "pl-brand-mark", "aria-hidden": true }, "P/L"),
@@ -524,7 +523,7 @@ window.__ModuleLoader__.load({
             iconButton("↻", "refresh", () => refresh(true), saving))),
         h("nav", { className: "pl-tabs", "aria-label": "提示词工作台导航" },
           ...tabs.map(([key, title, glyph]) => h("button", { key, type: "button", className: "pl-tab" + (tab === key ? " current" : ""), "aria-pressed": tab === key,
-            onClick: () => { setTab(key); setShowText(false); setManageOpen(false); } }, icon(glyph), h("span", null, title)))),
+            onClick: () => { setTab(key); setManageOpen(false); } }, icon(glyph), h("span", null, title)))),
         h("div", { className: "pl-body" }, h("div", { className: "pl-page" },
           error ? h("div", { className: "pl-error", role: "alert" }, "请求失败：" + error) : null,
           !data ? h("div", { className: "pl-empty", role: "status" }, "正在加载本地配置…") : null,
@@ -593,19 +592,6 @@ window.__ModuleLoader__.load({
                   h("details", { className: "pl-details" }, h("summary", null, data.evaluation ? `最近一次 text() 求值 · ${data.evaluation.section || "combined"} · ${data.evaluation.evaluatedAt}${data.evaluation.stale ? " · 配置已变化" : ""}` : "最近一次 text() 求值：尚未观察到"), h("pre", { className: "pl-pre" }, data.evaluation?.text || "（空或尚未求值；不代表模型已接收）")))))) : null,
           tab === "rules" && data ? h(RuleManager, { data, onCommitted: acceptData }) : null,
           tab === "transfer" && data ? h(TransferPanel, { data, onCommitted: acceptData }) : null,
-          tab === "assembly" && data ? h(React.Fragment, null,
-            h("div", { className: "pl-page-heading" }, h("div", null, h("h1", null, "组装快照"), h("p", null, "查看进程最近一次观察到的提示词与动态上下文。")),
-              h("label", { className: "pl-inline" }, h("input", { type: "checkbox", checked: showText, onChange: e => setShowText(e.target.checked) }), "展开正文")),
-            h("p", { className: "pl-notice" }, "快照可能来自其他会话，不等于模型 API 最终请求正文。"),
-            assembly?.stale ? h("p", { className: "pl-notice" }, "配置或设置已变化，当前快照待新请求验证。") : null,
-            assembly?.processingFailed ? h("p", { className: "pl-error" }, "本次处理失败，显示未处理结果。") : null,
-            !assembly ? h("div", { className: "pl-surface pl-empty" }, icon("activity"), h("p", null, "尚未捕获组装快照"), h("p", null, "发送一次新请求后，快照会自动出现在这里。")) : h(React.Fragment, null,
-              h("div", { className: "pl-cards" }, field("提示词段", assembly.sectionCount), field("动态上下文", assembly.contextCount || 0), field("观察时间", timeText(assembly.capturedAt))),
-              h("p", { className: "pl-kicker" }, "配置版本 " + assembly.configRevision + (assembly.truncated ? " · 内容已截断" : "")),
-              ...(assembly.sections || []).map(s => h("details", { className: "pl-details", key: s.index, open: showText },
-                h("summary", null, `${s.name} · ${s.retainedChars}/${s.chars} 字${s.truncated ? "（已截断）" : ""}`), h("pre", { className: "pl-pre" }, s.text || "（空）"))),
-              h("div", { className: "pl-section-head", style: { marginTop: 24 } }, h("h2", { className: "pl-section-title" }, "动态上下文"), h("span", { className: "pl-kicker" }, "过滤：" + ({ off: "关闭", strip: "去除", redact: "脱敏" }[assembly.contextFilter] || assembly.contextFilter))),
-              ...(assembly.contexts || []).map(cx => h("details", { className: "pl-details", key: "cx" + cx.index }, h("summary", null, `${cx.name} · ${cx.retainedChars}/${cx.chars} 字${cx.truncated ? "（已截断）" : ""}`), h("pre", { className: "pl-pre" }, cx.text || "（空）"))))) : null,
           tab === "settings" && data ? h(React.Fragment, null,
             h("div", { className: "pl-page-heading" }, h("div", null, h("h1", null, "设置"), h("p", null, "设置自动保存，并在之后的组装中使用。"))),
             h("section", { className: "pl-setting-group" },
@@ -617,8 +603,30 @@ window.__ModuleLoader__.load({
               h("p", null, "脱敏保留结构和功能句，只遮盖路径、URL、时间戳；去除会把动态上下文整组清空。"),
               h("p", null, "渠道指纹处理沿用已知句子清单，历史消息中的文本不在此范围。轨迹中的官方时间消息不受上下文过滤影响。"),
               h("p", null, "本地文件：DSH_HOME/prompt-lab/settings.json。"))),
-            h("details", { className: "pl-details" }, h("summary", null, "进程最近一次捕获的上下文形态"), h("pre", { className: "pl-pre" }, assembly ? (assembly.stale ? "（旧配置观察结果，待新请求验证）\n\n" : "") + ((assembly.contexts || []).map(cx => cx.text).join("\n\n") || "（空）") : "尚未捕获"))) : null)),
-        h("footer", { className: "pl-foot" }, h("span", null, "本地配置 · " + (activeProfile?.name || "正在连接")), h("span", null, "v" + (data?.version || "0.5.2") + (data ? " · 更新于 " + timeText(data.generatedAt) : ""))));
+            h("details", { className: "pl-details pl-diagnostics", "aria-label": "Prompt Lab 诊断" },
+              h("summary", null, "诊断", h("span", { className: "pl-kicker" }, "注入与过滤")),
+              h("div", { className: "pl-details-content" },
+                h("p", { className: "pl-setting-note" }, "仅核对 Prompt Lab 的正文、规则和过滤。完整会话上下文、Token 与请求历史可在 Context 面板查看。"),
+                h("div", { className: "pl-diagnostic-row" }, h("span", null, "当前启用配置"), h("span", null, activeProfile?.name || "未选择")),
+                h("div", { className: "pl-diagnostic-row" }, h("span", null, "注入 / 观察服务"), h("span", null,
+                  (st.registered ? "注入已注册" : "注入未就绪或已停用") + " · " + (st.observerRegistered ? "观察已注册" : "观察未就绪"))),
+                !assembly ? h("p", { className: "pl-notice" }, "尚未观察到组装。发送一次新请求后，再检查正文、规则与过滤结果。") : h(React.Fragment, null,
+                  h("div", { className: "pl-diagnostic-row" }, h("span", null, "最近观察"), h("span", null, timeText(assembly.capturedAt) + " · 配置版本 " + assembly.configRevision)),
+                  h("p", { className: "pl-setting-note" }, "观察范围为整个进程，可能来自其他会话；不等于模型 API 最终请求正文。"),
+                  assembly.stale ? h("p", { className: "pl-notice" }, "配置或设置已变化；以下是旧观察结果，待新请求验证。") : null,
+                  assembly.processingFailed ? h("p", { className: "pl-error" }, "本次处理失败，以下为未处理的观察内容，不能确认过滤已生效。") : null,
+                  ...[["prompt-lab:custom", "正文段"], ["prompt-lab:rules", "规则段"]].map(([name, label]) => {
+                    const section = assembly.sections?.find(s => s.name === name);
+                    return section ? h("details", { className: "pl-details", key: name, "data-diagnostic-section": name },
+                      h("summary", null, `${label} · ${section.retainedChars}/${section.chars} 字${section.truncated ? "（已截断）" : ""}`),
+                      h("div", { className: "pl-details-content" }, h("p", { className: "pl-kicker" }, name), h("pre", { className: "pl-pre" }, section.text || "（空）"))) :
+                      h("div", { className: "pl-diagnostic-row", key: name }, h("span", null, label), h("span", null, "本次未观察到该段，可能已关闭、为空或未注册"));
+                  }),
+                  !assembly.processingFailed ? h(React.Fragment, null,
+                    h("div", { className: "pl-diagnostic-row" }, h("span", null, "本次上下文过滤"), h("span", null,
+                      ({ off: "关闭", strip: "去除", redact: "脱敏" }[assembly.contextFilter] || "未知") + ` · 去除 ${assembly.contextsRemoved || 0} 条 · 剩余 ${assembly.contextCount || 0} 条`)),
+                    h("div", { className: "pl-diagnostic-row" }, h("span", null, "本次身份句处理"), h("span", null, `命中 ${assembly.identityBroken || 0} 处（零命中不代表开关关闭）`))) : null)))) : null)),
+        h("footer", { className: "pl-foot" }, h("span", null, "本地配置 · " + (activeProfile?.name || "正在连接")), h("span", null, "v" + (data?.version || "0.5.3") + (data ? " · 更新于 " + timeText(data.generatedAt) : ""))));
 
       // 宿主把本组件渲染在 conversation.view 的视图区里（.viewArea 是 flex:1 的纵向容器），
       // 这里只负责填满它：显示 / 隐藏由宿主的页签切换决定，组件自己不判断是否可见。

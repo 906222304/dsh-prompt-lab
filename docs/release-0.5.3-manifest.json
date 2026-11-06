@@ -1,0 +1,70 @@
+{
+  "version": "0.5.3",
+  "releaseDate": "2026-11-07",
+  "timezone": "Asia/Hong_Kong",
+  "sourceTag": "v0.5.3",
+  "baselineTag": "v0.5.2",
+  "baselineCommit": "d941a0f",
+  "package": {
+    "filename": "dsh-prompt-lab-0.5.3.tgz",
+    "bytes": 64004,
+    "files": 16,
+    "sha256": "849E5DD42C377D94E9BBC2CE49618B81C6AA0C58894500984C4B29358BB4D14C",
+    "loadedFromExtractedArchive": true
+  },
+  "verification": {
+    "nodeTests": {
+      "passed": 61,
+      "failed": 0,
+      "skipped": 0
+    },
+    "syntaxPassed": true,
+    "realChromiumReactDOM": true,
+    "viewportWidths": [
+      1200,
+      520,
+      360
+    ],
+    "diagnosticViewportWidths": [
+      1200,
+      360
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "renderedPages": [
+      "profile",
+      "rules",
+      "transfer",
+      "settings"
+    ],
+    "diagnosticsCollapsedByDefault": true,
+    "diagnosticOwnSectionsOnly": true,
+    "realHostVersion": "0.2.2-rc.1",
+    "realSystemPromptAndWebServerPassed": true,
+    "live": {
+      "proof": {
+        "ok": true,
+        "version": "0.5.3",
+        "clientRevision": "7e4fc644cc39",
+        "clientSourceMatched": true,
+        "profileCount": 3,
+        "ruleSetCount": 0,
+        "incrementalResponseBytes": 41,
+        "exportPassed": true,
+        "importPreviewPassed": true,
+        "previewDidNotChangeState": true
+      },
+      "userDataFilesUnchanged": true,
+      "configuredPromptUnchanged": true,
+      "backupDirectory": "C:/Users/yyyyyytd/.dsh/backups/prompt-lab-0.5.3-1793983486245",
+      "rollbackPackageVersion": "0.5.2"
+    }
+  },
+  "notes": [
+    "This manifest is outside the npm files allowlist and is not included in the tgz whose hash it records.",
+    "The native DSH window was not directly automated; real Chromium React DOM and real DSH modules were verified separately.",
+    "No npm publication or remote git push was performed."
+  ]
+}
