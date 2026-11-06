@@ -1,6 +1,6 @@
 {
   "name": "dsh-prompt-lab",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "提示词（Prompt Lab）：DeepSeek Harness 的系统提示词面板——会话页签内剖开实际注入内容与组装快照，管理多套配置，可切除脱敏",
   "type": "module",
   "main": "lib/index.js",
@@ -17,7 +17,8 @@
     "references/dsh-client-slots.md",
     "CHANGELOG.md",
     "docs/host-contract.md",
-    "docs/release-0.5.1.md"
+    "docs/release-0.5.1.md",
+    "docs/release-0.5.2.md"
   ],
   "keywords": [
     "dsh",

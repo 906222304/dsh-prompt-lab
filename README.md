@@ -1,6 +1,6 @@
 # 提示词（dsh-prompt-lab）
 
-> 版本：**0.5.1**；中文名：**提示词**；英文代号 `Prompt Lab`；包名 `dsh-prompt-lab`；页签 id `prompt-lab`。
+> 版本：**0.5.2**；中文名：**提示词**；英文代号 `Prompt Lab`；包名 `dsh-prompt-lab`；页签 id `prompt-lab`。
 
 DSH（DeepSeek Harness）的提示词面板：在**会话页签**里查看「已保存配置预览」「最近一次 text() 求值」和
 「进程最近一次组装快照」，直接编辑、保存、切换配置，并可对轨迹里那段
@@ -8,6 +8,9 @@ DSH（DeepSeek Harness）的提示词面板：在**会话页签**里查看「已
 
 支持配置新建、复制、重命名、删除与 JSON 导入导出；共享规则库可被多套配置按顺序引用，
 正文段与规则段分别开关。保存带编辑版本，多窗口冲突返回 409 并保留草稿。
+
+0.5.2 参考 [Magpie](https://github.com/yetone/magpie) 的桌面界面设计，使用低对比灰阶、分组卡片、
+配置列表与编辑器分栏。管理操作收进菜单，预览信息按需展开，支持明暗主题和窄屏布局。
 
 ## 组成
 
@@ -115,7 +118,7 @@ agent 身份句」清单即拒（`400 / code 11128`；报错文案「这次调�
 
 ```powershell
 npm run check              # 运行时、测试与辅助脚本的语法检查
-npm run test               # node --test 跑用例（58 项）
+npm run test               # node --test 跑用例（59 项）
 npm run test:plain         # 直接执行测试文件（沙箱/受限环境下 node --test 可能 EPERM）
 npm run extract:purge-prompt  # 解密 dsh-purge 上游默认提示词到 references/
 npm pack --dry-run --json  # 核对发布清单
@@ -130,7 +133,7 @@ npm run test:rollback      # 需要本地 0.4.9 tgz，使用隔离夹具验证�
 `PROMPT_LAB_BROWSER_DEPS=<该目录/node_modules>` 后运行 `npm run test:browser`；可用
 `PROMPT_LAB_BROWSER` 指定 Chromium/Edge 可执行文件，用 `PROMPT_LAB_BROWSER_ARTIFACTS` 指定截图目录。
 该辅助测试需要 Node 22+ 和已安装浏览器，使用隔离用户目录；插件运行时仍为 Node 18+ 且无第三方依赖。
-升级、回滚及完整验收记录见 [0.5.1 交付记录](docs/release-0.5.1.md)。
+当前界面、部署与回滚记录见 [0.5.2 交付记录](docs/release-0.5.2.md)，数据升级说明见 [0.5.1 交付记录](docs/release-0.5.1.md)。
 
 ## 排查
 

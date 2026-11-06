@@ -13,6 +13,7 @@ async function main() {
   const { SystemPrompt } = fromHost('@deepseek-ai/dsh-system-prompt');
   const { WebServer } = fromHost('@deepseek-ai/dsh-host-webserver');
   const version = fromHost('@deepseek-ai/dsh-system-prompt/package.json').version;
+  const pluginVersion = require('../package.json').version;
   const plugin = require('../lib/index.js');
   const state = require('../lib/state.js');
   const ui = require('../lib/ui.js');
@@ -57,7 +58,7 @@ async function main() {
     const origin=`http://127.0.0.1:${ctx.webServer.port}`;
     const headers={'x-prompt-lab-ui':'1','content-type':'application/json'};
     const live=await fetch(origin+'/prompt-lab/api',{headers}); assert.equal(live.status,200);
-    assert.equal((await live.json()).version,'0.5.1');
+    assert.equal((await live.json()).version,pluginVersion);
     const exported=await fetch(origin+'/prompt-lab/api/export?kind=profile&id=default',{headers});
     const bundle=(await exported.json()).bundle;assert.equal(bundle.ruleSets.length,1);
     const preview=await fetch(origin+'/prompt-lab/api/import',{method:'POST',headers,body:JSON.stringify({action:'preview',bundle})});

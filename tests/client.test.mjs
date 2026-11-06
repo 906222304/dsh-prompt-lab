@@ -214,3 +214,21 @@ test('manual refresh bypasses backoff and reports stale process snapshots accura
   assert.ok(!h.allText.includes('offline'));
   h.unmount();
 });
+
+test('configuration tools are disclosed and searching preserves the current draft', async () => {
+  const h = panelHarness();
+  await h.start();
+  assert.equal(h.button('新建配置'), undefined);
+  h.button('管理配置').props.onClick(); await h.flush();
+  assert.ok(h.button('新建配置'));
+  h.edit('保留这份草稿'); await h.flush();
+  h.find(n => n.props['aria-label'] === '搜索配置').props.onChange({ target: { value: '其他' } });
+  await h.flush();
+  assert.equal(h.find(n => n.props['data-profile-id'] === 'default'), undefined);
+  assert.ok(h.find(n => n.props['data-profile-id'] === 'other'));
+  assert.equal(h.textarea().props.value, '保留这份草稿');
+  h.find(n => n.props['aria-label'] === '管理配置操作').props.onKeyDown({ key: 'Escape' }); await h.flush();
+  assert.equal(h.button('新建配置'), undefined);
+  assert.equal(h.textarea().props.value, '保留这份草稿');
+  h.unmount();
+});

@@ -35,6 +35,7 @@ async function main() {
   const dependencies = process.env.PROMPT_LAB_BROWSER_DEPS;
   if (!dependencies) throw new Error('Set PROMPT_LAB_BROWSER_DEPS to a node_modules directory with react@18 and react-dom@18');
   const project=path.resolve(__dirname,'..');
+  const pluginVersion=JSON.parse(fs.readFileSync(path.join(project,'package.json'),'utf8')).version;
   const working=fs.mkdtempSync(path.join(os.tmpdir(),'prompt-lab-browser-'));
   const artifactDir=process.env.PROMPT_LAB_BROWSER_ARTIFACTS || path.join(working,'artifacts');
   fs.mkdirSync(artifactDir,{recursive:true});
@@ -45,7 +46,7 @@ async function main() {
   const ui=await import(pathToFileURL(path.join(project,'lib/ui.js')).href);
   const sections=[], hooks={};
   plugin.apply({systemPrompt:{section(s){sections.push(s);}},on(name,fn){hooks[name]=fn;}},{prompt:'浏览器验收初始正文'});
-  const html=`<!doctype html><meta charset="utf-8"><title>Prompt Lab 0.5.1 acceptance</title>
+  const html=`<!doctype html><meta charset="utf-8"><title>Prompt Lab ${pluginVersion} acceptance</title>
 <style>body{margin:0;background:#222;color:#eee}#app{height:100vh;display:flex}</style>
 <div id="app"></div><script src="/react.js"></script><script src="/react-dom.js"></script>
 <script>const root=ReactDOM.createRoot(document.getElementById('app'));window.__qaUnmount=()=>root.render(null);
@@ -85,21 +86,32 @@ plugin.apply({effect:fn=>fn(),slots:{inject(name,fn){fn()},register(options,rend
     page.events.set('Runtime.exceptionThrown',event=>errors.push(event.exceptionDetails.exception?.description || event.exceptionDetails.text));
     page.events.set('Page.javascriptDialogOpening',()=>page.call('Page.handleJavaScriptDialog',{accept:acceptDialog}));
     await page.call('Runtime.enable');await page.call('Page.enable');
+    await page.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'light'}]});
     await page.call('Emulation.setDeviceMetricsOverride',{width:1200,height:1000,deviceScaleFactor:1,mobile:false});
     await page.call('Page.navigate',{url:`http://127.0.0.1:${port}/`});
     await wait(()=>page.evaluate(`!!document.querySelector('textarea')`),'initial panel');
-    const ready=label=>wait(()=>page.evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)});return !!b&&!b.disabled})()`),'button ready '+label);
+    const ensureMenu=async label=>{
+      if(['新建配置','复制已保存配置','重命名','删除配置','导出此配置','配置名称'].includes(label)) {
+        await page.evaluate(`(()=>{if(!document.querySelector('[aria-label="管理配置操作"]'))[...document.querySelectorAll('button')].find(b=>b.textContent==='管理配置')?.click()})()`);
+      }
+      if(['复制规则','删除规则','导出规则'].includes(label)) {
+        await page.evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent==='更多操作');if(b?.getAttribute('aria-expanded')==='false')b.click()})()`);
+      }
+    };
+    const ready=label=>wait(()=>page.evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)});return !!b&&!b.disabled&&b.getClientRects().length>0})()`),'button ready '+label);
     const click=async label=>{
+      await ensureMenu(label);
       await ready(label);
-      return page.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)});button.click();})()`);
+      return page.evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent===${JSON.stringify(label)});button.scrollIntoView({block:'nearest'});button.click();})()`);
     };
     const fill=async(selector,value)=>{
-      await wait(()=>page.evaluate(`!!document.querySelector(${JSON.stringify(selector)})&&!document.querySelector(${JSON.stringify(selector)}).disabled`),'input ready '+selector);
+      if(selector==='[aria-label="配置名称"]')await ensureMenu('配置名称');
+      await page.evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});const d=e?.closest('details');if(d&&!d.open)d.querySelector('summary').click()})()`);
+      await wait(()=>page.evaluate(`!!document.querySelector(${JSON.stringify(selector)})&&!document.querySelector(${JSON.stringify(selector)}).disabled&&document.querySelector(${JSON.stringify(selector)}).getClientRects().length>0`),'input ready '+selector);
       return page.evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});const p=e.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(p,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);
     };
     const select=async(selector,value)=>{
-      await wait(()=>page.evaluate(`!!document.querySelector(${JSON.stringify(selector)})&&!document.querySelector(${JSON.stringify(selector)}).disabled`),'select ready '+selector);
-      return page.evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});e.value=${JSON.stringify(value)};e.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+      return page.evaluate(`(()=>{const e=document.querySelector(${JSON.stringify(selector)});if(!e.getClientRects().length){const name=${JSON.stringify(selector)}.includes('共享规则')?'data-rule-id':'data-profile-id';document.querySelector('['+name+'="'+${JSON.stringify(value)}+'"]')?.click();return;}e.value=${JSON.stringify(value)};e.dispatchEvent(new Event('change',{bubbles:true}));})()`);
     };
     const text=()=>page.evaluate('document.body.innerText');
     const next=async()=>delay(150);
@@ -140,6 +152,7 @@ plugin.apply({effect:fn=>fn(),slots:{inject(name,fn){fn()},register(options,rend
     await page.evaluate(`fetch('/qa/assemble',{method:'POST'})`);
     assert.equal(state.snapshot().assembly.sections[1].text,'## 当前规则集\nbrowser legacy\n\n## 共享乙\nbeta\n\n## 共享甲\nalpha');
     await click('规则库');await next();await select('[aria-label="选择共享规则"]',firstRuleId);await next();
+    await ensureMenu('删除规则');await next();
     assert.equal(await page.evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='删除规则').disabled`),true);
     assert.ok((await text()).includes('浏览器方案'));
     await click('提示词与规则');await next();
@@ -166,13 +179,22 @@ plugin.apply({effect:fn=>fn(),slots:{inject(name,fn){fn()},register(options,rend
     await wait(()=>state.snapshot().profiles.length===5,'active profile delete');await next();assert.equal(state.snapshot().selected,'default');
     await fill('textarea','草稿恢复');await next();await page.evaluate('window.__qaUnmount()');await next();await page.evaluate('window.__qaRender()');
     await wait(()=>page.evaluate(`document.querySelector('textarea')?.value==='草稿恢复'`),'draft restored after unmount');
-    for(const width of [1200,520,360]) {
-      await page.call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false});await next();
-      assert.equal(await page.evaluate('document.querySelector(".pl-body").scrollWidth<=document.querySelector(".pl-body").clientWidth'),true,`no horizontal overflow at ${width}px`);
-      const screenshot=await page.call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifactDir,`0.5.1-panel-${width}.png`),Buffer.from(screenshot.data,'base64'));
+    await fill('textarea','你是一位严谨、可靠的开发助手。\n\n工作方式\n• 先确认目标与已有上下文，再开始实施。\n• 优先给出具体、可验证的方案。\n• 将观察结果、推断和未验证假设明确区分。\n\n交付要求\n使用简体中文，保持回答简洁。完成后说明变更与验证结果。');
+    for(const theme of ['light','dark']) for(const width of [1200,520,360]) {
+      await page.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:theme}]});
+      await page.call('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});await next();
+      await page.evaluate(`(()=>{document.querySelector('.pl-body').scrollTop=0;const editor=document.querySelector('.pl-editor-content');if(editor)editor.scrollTop=0;})()`);
+      assert.equal(await page.evaluate('document.querySelector(".pl-body").scrollWidth<=document.querySelector(".pl-body").clientWidth'),true,`no horizontal overflow at ${width}px ${theme}`);
+      const screenshot=await page.call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifactDir,`${pluginVersion}-panel-${theme}-${width}.png`),Buffer.from(screenshot.data,'base64'));
+    }
+    await page.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:'light'}]});
+    await page.call('Emulation.setDeviceMetricsOverride',{width:1200,height:1000,deviceScaleFactor:1,mobile:false});
+    for(const [label,file] of [['规则库','rules'],['导入导出','transfer'],['设置','settings'],['组装快照','assembly']]) {
+      await click(label);await next();
+      const screenshot=await page.call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifactDir,`${pluginVersion}-${file}-light.png`),Buffer.from(screenshot.data,'base64'));
     }
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({ok:true,renderer:'Chromium + React 18 DOM',checks:['profile create/save/activate/copy/rename/delete with fallback','rule CRUD/disable/referenced delete protection','ordered references','legacy plus shared sections','409 draft protection','real JSON download and file import preview/commit','profile and rule draft remount recovery','1200/520/360px layouts'],artifacts:artifactDir}));
+    console.log(JSON.stringify({ok:true,version:pluginVersion,renderer:'Chromium + React 18 DOM',checks:['profile create/save/activate/copy/rename/delete with fallback','rule CRUD/disable/referenced delete protection','ordered references','legacy plus shared sections','409 draft protection','real JSON download and file import preview/commit','profile and rule draft remount recovery','1200/520/360px light and dark layouts','all five pages rendered'],artifacts:artifactDir}));
   } catch(error) {
     if(page){try{console.error('UI at failure: '+await page.evaluate('document.body.innerText'));}catch{}}
     throw error;

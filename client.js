@@ -27,31 +27,26 @@ window.__ModuleLoader__.load({
     // 颜色一律取 dsw-* 主题变量并带兜底色（var(--token, 兜底值)），深浅色主题都能读。
     // 整份样式只注入一次（见 apply()），面板内部不再写内联样式，只有少量布局微调用 style 属性。
     const CSS = `
-/* ── 容器 ──
-   宿主把本组件渲染在 conversation.view 的视图区里，宿主 .viewArea 是 flex:1 的纵向容器，
-   所以这里同样用 flex:1 + min-height:0 把空间撑满，滚动交给内部的 .pl-body。 */
-.pl-view{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;color:var(--dsw-alias-label-primary,#f1f1f1);font:13px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif}
-.pl-view *{box-sizing:border-box}
-/* ── 头部：左侧标题 + 副标题，右侧操作按钮 ── */
-.pl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 17px;border-bottom:1px solid var(--dsw-alias-border-l1,#444)}
-.pl-title{font-size:16px;font-weight:700}.pl-sub{color:var(--dsw-alias-label-secondary,#aaa);font-size:11px}
-/* ── 通用控件：按钮（.accent 用品牌色，:disabled 降透明度）与面板内页签 ── */
-.pl-btn{color:inherit;background:var(--dsw-alias-bg-layer-2,#333);border:1px solid var(--dsw-alias-border-l1,#555);border-radius:7px;padding:6px 11px;font:inherit;cursor:pointer}.pl-btn:disabled{opacity:.45;cursor:default}
-.pl-btn.accent{border-color:var(--dsw-alias-brand-primary,#5ca981)}.pl-tabs{display:flex;gap:6px;padding:9px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,#444)}
-.pl-tab{border:0;border-radius:6px;color:inherit;background:transparent;padding:7px 12px;cursor:pointer;font:inherit}.pl-tab.current{background:var(--dsw-alias-bg-layer-2,#444);font-weight:700}.pl-tabs{flex-wrap:wrap}
-/* ── 概览卡片：三列网格（插件状态 / 当前规则集 / 组装快照），窄屏改两列见文件末尾 ── */
-.pl-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 14px 0}.pl-card{border-radius:9px;background:var(--dsw-alias-bg-layer-2,#333);border:1px solid var(--dsw-alias-border-l1,#444);padding:10px}.pl-card .label{color:var(--dsw-alias-label-secondary,#aaa);font-size:11px}.pl-card .value{font-weight:650;margin-top:5px;overflow-wrap:anywhere}
-/* ── 正文：面板唯一的滚动区（flex:1 + overflow:auto）；.pl-warning 用于「本机可见 / 不等于模型已接收」这类提醒 ── */
-.pl-body{padding:12px 14px 18px;overflow:auto;flex:1;min-height:0}.pl-warning{color:#edc481;background:#8a641824;border:1px solid #8a641851;border-radius:8px;padding:9px 11px;margin:0 0 12px;font-size:12px}
-/* ── 排版助手：.pl-inline 是一行内自动换行的控件组（strong 靠左、其余靠右排开），.pl-muted 是次要文案 ── */
-.pl-inline{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:9px}.pl-inline>span{min-width:0;overflow-wrap:anywhere}.pl-inline strong{margin-right:auto}.pl-muted{color:var(--dsw-alias-label-secondary,#aaa)}
-/* ── 表单：配置选择框与两个文本域；文本域用等宽字体，方便核对提示词里的空格与换行 ── */
-.pl-select,.pl-textarea{background:var(--dsw-alias-bg-layer-2,#333);border:1px solid var(--dsw-alias-border-l1,#555);border-radius:8px;color:inherit;font:inherit;max-width:100%}.pl-select{padding:7px 10px}.pl-textarea{width:100%;min-height:180px;line-height:1.65;font-family:ui-monospace,Consolas,monospace;resize:vertical;padding:10px}.pl-textarea.rules{min-height:100px}.pl-field{display:block;font-weight:600;margin:12px 0 6px}
-/* ── 代码块与折叠块：提示词全文、组装段正文、编辑器预览都用它；长文本换行而不是横向滚动 ── */
-.pl-pre{white-space:pre-wrap;overflow-wrap:anywhere;tab-size:2;background:var(--dsw-alias-bg-layer-2,#303030);border:1px solid var(--dsw-alias-border-l1,#444);border-radius:8px;padding:12px;font:12px/1.7 ui-monospace,Consolas,monospace;max-height:300px;overflow:auto;user-select:text}
-.pl-details{border:1px solid var(--dsw-alias-border-l1,#444);border-radius:8px;margin:8px 0;padding:9px 12px}.pl-details summary{cursor:pointer;font-weight:600}.pl-error{color:#ee9292;padding:8px}.pl-foot{display:flex;justify-content:space-between;gap:8px;padding:10px 14px;border-top:1px solid var(--dsw-alias-border-l1,#444);font-size:11px;color:var(--dsw-alias-label-secondary,#aaa)}
-/* ── 窄屏（会话分栏被压窄或窗口很小时）：概览卡片改两列，第三张跨整行 ── */
-@media(max-width:650px){.pl-cards{grid-template-columns:1fr 1fr}.pl-cards .pl-card:last-child{grid-column:1/-1}}
+.pl-view{--pl-fb-bg:#f4f4f6;--pl-fb-paper:#fff;--pl-fb-text:#202025;--pl-fb-muted:#777780;--pl-fb-line:#e3e3e8;--pl-fb-soft:#f9f9fb;--pl-fb-green:#168550;--pl-fb-accent:#6d65b8;--pl-fb-on:#fff;
+ --pl-bg:var(--dsw-alias-bg-layer-1,var(--pl-fb-bg));--pl-paper:var(--dsw-alias-bg-layer-2,var(--pl-fb-paper));--pl-text:var(--dsw-alias-label-primary,var(--pl-fb-text));--pl-muted:var(--dsw-alias-label-secondary,var(--pl-fb-muted));--pl-line:var(--dsw-alias-border-l1,var(--pl-fb-line));--pl-soft:color-mix(in srgb,var(--pl-text) 2%,var(--pl-paper));--pl-pill:color-mix(in srgb,var(--pl-text) 4%,var(--pl-paper));--pl-hover:color-mix(in srgb,var(--pl-text) 7%,var(--pl-paper));--pl-green:var(--pl-fb-green);--pl-accent:var(--pl-fb-accent);--pl-selected:color-mix(in srgb,var(--pl-accent) 9%,var(--pl-paper));--pl-on:var(--dsw-alias-bg-layer-1,var(--pl-fb-on));
+ flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden;background:var(--pl-bg);color:var(--pl-text);font:13px/1.55 'Segoe UI Variable Text','Segoe UI','Microsoft YaHei UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased;container-type:size}
+@media(prefers-color-scheme:dark){.pl-view{--pl-fb-bg:#1a1a1e;--pl-fb-paper:#232327;--pl-fb-text:#ededf1;--pl-fb-muted:#9898a2;--pl-fb-line:#34343b;--pl-fb-soft:#1f1f23;--pl-fb-green:#77cfa1;--pl-fb-accent:#aca5e1;--pl-fb-on:#1a1a1e}}
+.pl-view *{box-sizing:border-box}.pl-view :where(h1,h2,h3,p,pre){margin:0}.pl-view :where(button,input,select,textarea){font:inherit;color:inherit}.pl-view button{cursor:pointer}.pl-view :where(button,input,select,textarea,summary):focus-visible{outline:2px solid var(--pl-accent);outline-offset:3px}.pl-view button:disabled{opacity:.4;cursor:default}.pl-view svg{width:17px;height:17px;flex:none;stroke-width:1.65}.pl-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.pl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:21px 28px 12px;flex:none}.pl-brand{display:flex;align-items:center;gap:11px;min-width:0}.pl-brand-mark{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--pl-line);border-radius:11px;background:var(--pl-paper);font-size:12px;letter-spacing:-.5px;font-weight:700}.pl-title{font-size:17px;font-weight:650;letter-spacing:-.45px}.pl-sub{font-size:11px;color:var(--pl-muted);margin-top:1px}.pl-header-actions{display:flex;align-items:center;gap:12px}.pl-connection{display:flex;align-items:center;gap:6px;color:var(--pl-muted);font-size:11px;white-space:nowrap}.pl-dot{width:6px;height:6px;border-radius:50%;display:inline-block;background:var(--pl-green);flex:none}.pl-dot.pending{background:var(--pl-muted)}
+.pl-tabs{display:flex;gap:5px;padding:0 28px 17px;border-bottom:1px solid var(--pl-line);flex:none;flex-wrap:wrap}.pl-tab{display:flex;align-items:center;gap:7px;min-height:34px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--pl-muted);padding:6px 12px;font-size:12px;white-space:nowrap}.pl-tab:hover{color:var(--pl-text);background:var(--pl-pill)}.pl-tab.current{background:var(--pl-paper);color:var(--pl-text);border-color:var(--pl-line);box-shadow:0 1px 2px #00000008}.pl-tab svg{width:14px;height:14px}
+.pl-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:5px 12px;border:1px solid var(--pl-line);border-radius:7px;background:var(--pl-paper);font-size:12px;white-space:nowrap;transition:background .12s,color .12s}.pl-btn:hover:not(:disabled){background:var(--pl-hover)}.pl-btn.accent{background:var(--pl-text);border-color:var(--pl-text);color:var(--pl-on)}.pl-btn.accent:hover:not(:disabled){opacity:.85;background:var(--pl-text)}.pl-btn.quiet{background:transparent;border-color:transparent;color:var(--pl-muted)}.pl-btn.quiet:hover:not(:disabled){background:var(--pl-pill);color:var(--pl-text)}.pl-btn.danger{color:#c75a5a}.pl-icon-button{display:inline-grid;place-items:center;width:30px;height:30px;border:0;border-radius:7px;background:transparent;color:var(--pl-muted);padding:0}.pl-icon-button:hover:not(:disabled){background:var(--pl-pill);color:var(--pl-text)}
+.pl-body{padding:25px 28px 30px;overflow:auto;flex:1;min-height:0;scrollbar-width:thin;scrollbar-color:var(--pl-line) transparent}.pl-page{width:100%;max-width:1180px;margin:auto;min-width:0}.pl-page-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}.pl-page-heading h1{font-size:19px;letter-spacing:-.6px;font-weight:620}.pl-page-heading p{color:var(--pl-muted);font-size:12px;margin-top:3px}.pl-kicker{color:var(--pl-muted);font-size:11px;letter-spacing:.03em}.pl-count{font-size:10px;padding:1px 6px;min-width:19px;text-align:center;border-radius:5px;background:var(--pl-pill);color:var(--pl-muted);font-variant-numeric:tabular-nums}.pl-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:12px;background:var(--pl-pill);font-size:10px;color:var(--pl-muted);white-space:nowrap}.pl-badge.active{color:var(--pl-green);background:color-mix(in srgb,var(--pl-green) 8%,var(--pl-paper))}
+.pl-workspace{display:grid;grid-template-columns:218px minmax(0,1fr);align-items:start;gap:22px;min-width:0}.pl-collection{border:1px solid var(--pl-line);border-radius:12px;background:var(--pl-paper);overflow:hidden;position:sticky;top:0}.pl-collection-head{display:flex;align-items:center;gap:7px;padding:13px 13px 9px;font-size:12px;font-weight:600}.pl-collection-head .pl-icon-button{margin-left:auto}.pl-search{margin:0 10px 10px;display:flex;gap:7px;align-items:center;padding:7px 9px;border-radius:7px;background:var(--pl-pill);color:var(--pl-muted)}.pl-search svg{width:13px;height:13px}.pl-search input{min-width:0;width:100%;border:0;outline:none;background:transparent;font-size:11px}.pl-profile-items{padding:0 6px 7px;max-height:62vh;overflow:auto;scrollbar-width:thin}.pl-profile-item{display:flex;width:100%;align-items:center;gap:8px;text-align:left;padding:11px 9px;border:0;border-radius:7px;background:transparent;margin:2px 0;color:var(--pl-text)}.pl-profile-item:hover{background:var(--pl-pill)}.pl-profile-item.selected{background:var(--pl-selected)}.pl-profile-item>svg{color:var(--pl-muted);width:16px;height:16px}.pl-profile-copy{min-width:0;flex:1}.pl-profile-name{display:block;font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pl-profile-snippet{display:block;color:var(--pl-muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px}.pl-collection-foot{padding:11px 13px;border-top:1px solid var(--pl-line);font-size:10px;color:var(--pl-muted)}.pl-mobile-picker{display:none}
+.pl-editor-card,.pl-surface{background:var(--pl-paper);border:1px solid var(--pl-line);border-radius:12px;min-width:0}.pl-editor-card{display:flex;flex-direction:column;overflow:clip}.pl-editor-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 22px;border-bottom:1px solid var(--pl-line)}.pl-editor-head h2{font-size:15px;font-weight:600;letter-spacing:-.2px;overflow-wrap:anywhere}.pl-editor-head p{margin-top:3px;color:var(--pl-muted);font-size:11px}.pl-editor-head-actions{display:flex;align-items:center;gap:10px;flex:none}.pl-manage{position:relative}.pl-manage-panel{position:absolute;right:0;top:40px;z-index:20;width:284px;max-width:calc(100cqw - 44px);padding:14px;border:1px solid var(--pl-line);border-radius:11px;background:var(--pl-paper);box-shadow:0 12px 35px #0002}.pl-manage-panel .pl-select{width:100%;margin:7px 0 12px}.pl-menu-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}.pl-menu-actions .pl-btn{white-space:normal}.pl-menu-actions .danger{grid-column:1/-1}.pl-editor-section{padding:21px 22px}.pl-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:13px}.pl-section-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600}.pl-section-head p{font-size:11px;color:var(--pl-muted);margin-top:2px}.pl-section-meta{display:flex;align-items:center;gap:11px;font-size:10px;color:var(--pl-muted);white-space:nowrap}.pl-divider{height:1px;background:var(--pl-line);margin:0 22px}
+.pl-editor-card{height:clamp(430px,calc(100cqh - 320px),900px)}.pl-editor-content{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--pl-line) transparent}.pl-editor-head{flex:none}.pl-editor-card>.pl-actionbar{position:relative;bottom:auto;flex:none}
+.pl-select,.pl-textarea{max-width:100%;background:var(--pl-pill);border:1px solid transparent;border-radius:7px;min-width:0}.pl-select{padding:8px 10px;min-height:32px}.pl-select::placeholder,.pl-textarea::placeholder{color:var(--pl-muted);opacity:.7}.pl-select:focus,.pl-textarea:focus{border-color:color-mix(in srgb,var(--pl-accent) 45%,var(--pl-line));outline:0;box-shadow:0 0 0 3px color-mix(in srgb,var(--pl-accent) 10%,transparent)}.pl-textarea{width:100%;min-height:180px;padding:15px 16px;line-height:1.85;font:12px/1.85 'Cascadia Code',Consolas,'Microsoft YaHei UI',monospace;resize:vertical;display:block;tab-size:2;background:var(--pl-soft);border-color:var(--pl-line)}.pl-textarea.main{height:clamp(240px,32vh,390px);min-height:230px}.pl-textarea.rules{min-height:125px}.pl-field{display:block;font-weight:500;font-size:12px;margin:15px 0 7px}.pl-switch{position:relative;display:inline-flex;align-items:center;flex:none}.pl-switch-control{appearance:none;-webkit-appearance:none;width:30px;height:18px;margin:0;border:0;border-radius:12px;background:color-mix(in srgb,var(--pl-text) 22%,var(--pl-paper));cursor:pointer;position:relative;transition:background .15s}.pl-switch-control::before{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--pl-paper);box-shadow:0 1px 2px #0003;transition:transform .15s}.pl-switch-control:checked{background:var(--pl-text)}.pl-switch-control:checked::before{transform:translateX(12px);background:var(--pl-on)}.pl-switch-control:disabled{opacity:.4;cursor:default}
+.pl-inline{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:9px;min-width:0}.pl-inline>span{min-width:0;overflow-wrap:anywhere}.pl-inline strong{margin-right:auto}.pl-muted{color:var(--pl-muted)}.pl-empty{padding:20px 14px;text-align:center;color:var(--pl-muted);font-size:11px;line-height:1.8}.pl-rule-list{border:1px solid var(--pl-line);border-radius:8px;overflow:hidden}.pl-rule-list .pl-inline{margin:0;padding:10px 12px;flex-wrap:nowrap;gap:5px;min-height:47px}.pl-rule-list .pl-inline+.pl-inline{border-top:1px solid var(--pl-line)}.pl-rule-list .pl-inline>span{flex:1;font-size:12px}.pl-rule-list .pl-inline .pl-btn{border-color:transparent;background:var(--pl-pill);font-size:10px;padding:3px 7px;min-height:26px}.pl-rule-picker{padding:8px 0 0}.pl-add-rule-row{display:flex;align-items:center;gap:8px;padding:7px 3px}.pl-add-rule-row>span{flex:1;font-size:11px;color:var(--pl-muted)}
+.pl-actionbar{position:sticky;bottom:-1px;display:flex;align-items:center;gap:8px;padding:14px 22px;background:var(--pl-paper);border-top:1px solid var(--pl-line);z-index:4;flex-wrap:wrap}.pl-actionbar .pl-save-state{display:flex;align-items:center;gap:5px;margin-right:auto;font-size:10px;color:var(--pl-muted)}.pl-save-state.dirty{color:var(--pl-accent)}.pl-actionbar .pl-btn{min-height:34px}.pl-inspector{margin:16px 0 0;font-size:11px;color:var(--pl-muted)}.pl-inspector>summary{cursor:pointer;padding:8px 2px}.pl-inspector[open]>summary{margin-bottom:8px}.pl-details{border:1px solid var(--pl-line);border-radius:9px;margin:10px 0;background:var(--pl-paper);overflow:hidden}.pl-details summary{cursor:pointer;font-size:12px;font-weight:500;padding:13px 15px}.pl-details[open]>summary{border-bottom:1px solid var(--pl-line)}.pl-details-content{padding:14px 16px}.pl-details .pl-pre{margin:12px}.pl-details-content .pl-pre{margin:0}.pl-pre{white-space:pre-wrap;overflow-wrap:anywhere;tab-size:2;background:var(--pl-soft);border:1px solid var(--pl-line);border-radius:7px;padding:14px;font:11px/1.8 Consolas,'Microsoft YaHei UI',monospace;max-height:340px;overflow:auto;user-select:text;color:var(--pl-text)}
+.pl-warning,.pl-notice{color:var(--pl-muted);background:var(--pl-pill);border:1px solid var(--pl-line);border-radius:8px;padding:10px 13px;margin:0 0 16px;font-size:11px;line-height:1.7}.pl-error{color:#c75a5a;background:color-mix(in srgb,#c75a5a 7%,var(--pl-paper));border-radius:8px;padding:11px 14px;font-size:12px;margin-bottom:14px}.pl-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--pl-line);border-radius:11px;background:var(--pl-paper);margin-bottom:18px;overflow:hidden}.pl-card{padding:15px 18px}.pl-card+.pl-card{border-left:1px solid var(--pl-line)}.pl-card .label{color:var(--pl-muted);font-size:10px}.pl-card .value{font-weight:550;font-size:13px;margin-top:4px;overflow-wrap:anywhere}.pl-foot{display:flex;justify-content:space-between;gap:8px;padding:9px 28px;border-top:1px solid var(--pl-line);font-size:10px;color:var(--pl-muted);background:var(--pl-bg);flex:none}
+.pl-library-layout{display:grid;grid-template-columns:218px minmax(0,1fr);gap:22px;align-items:start}.pl-library-editor{padding:22px}.pl-library-editor>.pl-field:first-child{margin-top:0}.pl-library-editor .pl-textarea{min-height:300px}.pl-library-editor .pl-select{width:100%}.pl-library-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding-top:20px;margin-top:20px;border-top:1px solid var(--pl-line)}.pl-library-actions .pl-btn.accent{margin-left:auto}.pl-library-ref{font-size:11px;color:var(--pl-muted);line-height:1.7;margin-top:14px}.pl-library-more{position:relative}.pl-library-more>summary{list-style:none}.pl-library-more>summary::-webkit-details-marker{display:none}.pl-library-more[open]>.pl-menu-actions{position:absolute;bottom:40px;left:0;width:240px;padding:10px;border:1px solid var(--pl-line);border-radius:9px;background:var(--pl-paper);box-shadow:0 8px 24px #0002;z-index:8}.pl-transfer-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.pl-transfer-card{padding:24px;min-width:0}.pl-transfer-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:var(--pl-pill);margin-bottom:17px}.pl-transfer-card h2{font-size:14px;font-weight:600;margin-bottom:7px}.pl-transfer-card p{font-size:12px;color:var(--pl-muted);line-height:1.8;margin-bottom:20px}.pl-file-input{font-size:11px;max-width:100%;width:100%;color:var(--pl-muted)}.pl-file-input::file-selector-button{border:1px solid var(--pl-line);background:var(--pl-pill);color:var(--pl-text);padding:7px 10px;border-radius:6px;margin-right:8px;font:inherit;cursor:pointer}.pl-import-preview{margin-top:18px;padding:22px}.pl-import-preview h3{font-size:14px;margin-bottom:7px}.pl-import-preview p{font-size:12px;color:var(--pl-muted);margin-bottom:10px}.pl-setting-group{border:1px solid var(--pl-line);border-radius:12px;background:var(--pl-paper);overflow:hidden;margin-bottom:18px}.pl-setting-row{padding:20px 22px;display:flex;align-items:center;gap:25px}.pl-setting-row+.pl-setting-row{border-top:1px solid var(--pl-line)}.pl-setting-copy{min-width:0;flex:1}.pl-setting-copy h2{font-size:13px;font-weight:550}.pl-setting-copy p{font-size:11px;color:var(--pl-muted);margin-top:4px;max-width:590px;line-height:1.7}.pl-setting-row .pl-select{max-width:210px;font-size:11px;flex:none}.pl-setting-note{font-size:11px;color:var(--pl-muted);padding:0 3px;line-height:1.8}
+@container(max-width:850px){.pl-workspace,.pl-library-layout{grid-template-columns:minmax(0,1fr)}.pl-collection{display:none}.pl-mobile-picker{display:flex;align-items:center;gap:8px;margin-bottom:14px}.pl-mobile-picker>.pl-select{flex:1;width:100%}.pl-editor-section{padding:19px}.pl-editor-head{padding:18px 19px}.pl-divider{margin:0 19px}.pl-library-editor{padding:20px}.pl-actionbar{padding:13px 19px}.pl-transfer-grid{grid-template-columns:1fr}}
+@container(max-width:500px){.pl-head{padding:16px 16px 12px}.pl-tabs{padding:0 16px 13px;gap:4px}.pl-tab{padding:6px 9px;font-size:11px;gap:5px}.pl-tab svg{width:12px;height:12px}.pl-body{padding:20px 15px 24px}.pl-title{font-size:15px}.pl-connection{display:none}.pl-page-heading{margin-bottom:15px}.pl-page-heading h1{font-size:17px}.pl-editor-head{flex-wrap:wrap;gap:8px}.pl-editor-head-actions{width:100%;justify-content:space-between}.pl-editor-section{padding:16px}.pl-divider{margin:0 16px}.pl-manage{margin-left:auto}.pl-actionbar{padding:12px 16px}.pl-actionbar .pl-save-state{width:100%;margin-bottom:2px}.pl-actionbar .pl-btn{flex:1}.pl-setting-row{padding:17px 18px;align-items:flex-start;gap:13px;flex-direction:column}.pl-setting-row .pl-select{width:100%;max-width:100%}.pl-foot{padding:8px 16px}.pl-cards{grid-template-columns:1fr}.pl-card+.pl-card{border-left:0;border-top:1px solid var(--pl-line)}.pl-transfer-card{padding:20px}.pl-section-meta{gap:8px}.pl-library-actions .pl-btn{flex:1}.pl-library-editor{padding:17px}.pl-rule-list .pl-inline{flex-wrap:wrap}.pl-rule-list .pl-inline>span{flex-basis:100%;margin-bottom:3px}}
+@media(prefers-reduced-motion:reduce){.pl-view *{transition:none!important}}
 `;
 
     /**
@@ -125,6 +120,27 @@ window.__ModuleLoader__.load({
     const btn = (label, onClick, cls = "", disabled = false) => h("button", {
       type: "button", className: "pl-btn " + cls, onClick, disabled,
     }, label);
+    const icon = (name) => {
+      const paths = {
+        document: "M7 3h7l4 4v14H6V3h1m7 0v5h5M9 12h6M9 16h6",
+        layers: "m12 3 9 5-9 5-9-5 9-5m-9 9 9 5 9-5M3 16l9 5 9-5",
+        transfer: "M7 3v13m-4-4 4 4 4-4m6 9V8m-4 4 4-4 4 4",
+        activity: "M3 12h4l3-8 4 16 3-8h4",
+        settings: "M4 7h16M4 17h16M8 4v6m8 4v6",
+        refresh: "M20 8a8 8 0 1 0 1 6M20 3v5h-5",
+        plus: "M12 5v14M5 12h14",
+        search: "m16 16 5 5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
+        more: "M5 12h.01M12 12h.01M19 12h.01",
+        check: "m5 12 4 4L19 6",
+      };
+      return h("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true }, h("path", { d: paths[name] || paths.document }));
+    };
+    const iconButton = (label, name, onClick, disabled = false) => h("button", {
+      type: "button", className: "pl-icon-button", title: label === "↻" ? "刷新配置" : label, "aria-label": label === "↻" ? "刷新配置" : label, onClick, disabled,
+    }, icon(name), h("span", { className: "pl-sr" }, label));
+    const toggle = (label, checked, onChange, disabled) => h("label", { className: "pl-switch" },
+      h("input", { type: "checkbox", role: "switch", className: "pl-switch-control", "aria-label": label, checked, onChange: e => onChange(e.target.checked), disabled }),
+      h("span", { className: "pl-sr" }, label));
 
     async function downloadBundle(kind = "all", id = "") {
       const result = await api("GET", undefined, 0,
@@ -143,6 +159,7 @@ window.__ModuleLoader__.load({
       const saved = useRef(retainedRuleDraft?.saved || empty());
       const [busy, setBusy] = useState(false);
       const [error, setError] = useState("");
+      const [moreOpen, setMoreOpen] = useState(false);
       const working = useRef(false);
       const mounted = useRef(false);
       const current = useRef(draft); current.current = draft;
@@ -153,7 +170,7 @@ window.__ModuleLoader__.load({
         retainedRuleDraft = JSON.stringify(next) !== JSON.stringify(saved.current) ? { draft: next, saved: saved.current } : null;
       };
       const load = item => { const next = item ? { id: item.id, name: item.name, text: item.text, enabled: item.enabled, version: item.version } : empty();
-        current.current = next; saved.current = next; retainedRuleDraft = null; setDraft(next); };
+        current.current = next; saved.current = next; retainedRuleDraft = null; setDraft(next); setMoreOpen(false); };
       const choose = item => { if (!dirty() || window.confirm("放弃规则草稿并切换？")) load(item); };
       useEffect(() => {
         mounted.current = true;
@@ -181,28 +198,36 @@ window.__ModuleLoader__.load({
         finally { working.current = false; if (mounted.current) setBusy(false); }
       }
       const selectedRule = data.ruleSets.find(item => item.id === draft.id);
-      return h("section", { "aria-label": "共享规则库" },
-        h("p", { className: "pl-muted" }, "规则可被多个配置引用；启用状态对所有引用生效。修改保存后在下一次组装中使用。"),
+      return h("section", { "aria-label": "共享规则库", onPointerDown: e => { if (moreOpen && !e.target.closest(".pl-library-more")) setMoreOpen(false); } },
+        h("div", { className: "pl-page-heading" }, h("div", null, h("h1", null, "共享规则库"), h("p", null, "写一次规则，在多套配置中重复使用。")), btn("新建规则", () => choose(null), "", busy)),
         error ? h("p", { className: "pl-error" }, error) : null,
-        h("div", { className: "pl-inline" },
+        h("div", { className: "pl-mobile-picker" },
           h("select", { className: "pl-select", "aria-label": "选择共享规则", value: draft.id, disabled: busy,
             onChange: e => choose(data.ruleSets.find(item => item.id === e.target.value)) },
             h("option", { value: "" }, "新建规则草稿"),
-            ...data.ruleSets.map(item => h("option", { key: item.id, value: item.id }, item.name))),
-          btn("新建规则", () => choose(null), "", busy),
-          btn("载入最新规则", () => choose(selectedRule), "", busy || !draft.id),
-          btn("复制规则", () => mutate("duplicate"), "", busy || !draft.id),
-          btn("删除规则", () => mutate("delete"), "", busy || !draft.id || !!selectedRule?.usedBy?.length),
-          btn("导出规则", () => downloadBundle("rule", draft.id).catch(e => setError(e.message)), "", busy || !draft.id)),
-        h("label", { className: "pl-field" }, "规则名称"),
-        h("input", { className: "pl-select", "aria-label": "规则名称", maxLength: 80, value: draft.name, disabled: busy, onChange: e => change("name", e.target.value) }),
-        h("label", { className: "pl-field" }, "规则正文"),
-        h("textarea", { className: "pl-textarea", "aria-label": "规则正文", value: draft.text, disabled: busy, onChange: e => change("text", e.target.value) }),
-        h("label", { className: "pl-inline" }, h("input", { type: "checkbox", checked: draft.enabled, disabled: busy, onChange: e => change("enabled", e.target.checked) }), "启用此共享规则"),
-        h("p", { className: "pl-muted" }, selectedRule?.usedBy?.length
-          ? "引用此规则的配置：" + selectedRule.usedBy.map(item => item.name).join("、") + "。删除前须解除全部引用。" : "暂无配置引用"),
-        h("p", { className: "pl-muted" }, dirty() ? "有未保存规则草稿；切换页签后仍保留在本次页面内存。" : "规则草稿与载入版本一致"),
-        btn("保存规则", () => mutate(draft.id ? "save" : "create"), "accent", busy || !draft.name.trim() || !draft.text.trim()));
+            ...data.ruleSets.map(item => h("option", { key: item.id, value: item.id }, item.name)))),
+        h("div", { className: "pl-library-layout" },
+          h("aside", { className: "pl-collection" }, h("div", { className: "pl-collection-head" }, "全部规则", h("span", { className: "pl-count" }, data.ruleSets.length)),
+            h("div", { className: "pl-profile-items" }, ...data.ruleSets.map(item => h("button", { key: item.id, type: "button", className: "pl-profile-item" + (draft.id === item.id ? " selected" : ""), "data-rule-id": item.id, disabled: busy, onClick: () => choose(item) },
+              icon("layers"), h("span", { className: "pl-profile-copy" }, h("span", { className: "pl-profile-name" }, item.name), h("span", { className: "pl-profile-snippet" }, (item.usedBy?.length || 0) + " 套配置引用")), h("i", { className: "pl-dot" + (item.enabled ? "" : " pending"), title: item.enabled ? "已启用" : "已停用" }))),
+              !data.ruleSets.length ? h("div", { className: "pl-empty" }, "规则库还是空的，", h("br"), "从右侧创建第一条规则。") : null),
+            h("div", { className: "pl-collection-foot" }, "停用规则会影响所有引用它的配置")),
+          h("div", { className: "pl-surface pl-library-editor" },
+            h("div", { className: "pl-section-head" }, h("h2", { className: "pl-section-title" }, draft.id ? "编辑规则" : "新建规则"), toggle("启用此共享规则", draft.enabled, value => change("enabled", value), busy)),
+            h("label", { className: "pl-field" }, "规则名称"),
+            h("input", { className: "pl-select", "aria-label": "规则名称", maxLength: 80, placeholder: "例如：代码审查规范", value: draft.name, disabled: busy, onChange: e => change("name", e.target.value) }),
+            h("label", { className: "pl-field" }, "规则正文"),
+            h("textarea", { className: "pl-textarea", "aria-label": "规则正文", placeholder: "编写可复用的约定与要求…", value: draft.text, disabled: busy, onChange: e => change("text", e.target.value) }),
+            h("p", { className: "pl-library-ref" }, selectedRule?.usedBy?.length ? "引用此规则的配置：" + selectedRule.usedBy.map(item => item.name).join("、") + "。删除前须解除全部引用。" : "暂无配置引用"),
+            h("div", { className: "pl-library-actions" },
+              h("div", { className: "pl-library-more" }, h("button", { className: "pl-btn quiet", type: "button", "aria-expanded": moreOpen, onClick: () => setMoreOpen(!moreOpen) }, icon("more"), "更多操作"),
+                moreOpen ? h("div", { className: "pl-menu-actions", style: { position: "absolute", bottom: 40, left: 0, width: 248, padding: 12, background: "var(--pl-paper)", border: "1px solid var(--pl-line)", borderRadius: 10, boxShadow: "0 8px 28px #0002", zIndex: 8 } },
+                  btn("复制规则", () => mutate("duplicate"), "", busy || !draft.id),
+                  btn("导出规则", () => downloadBundle("rule", draft.id).catch(e => setError(e.message)), "", busy || !draft.id),
+                  btn("删除规则", () => mutate("delete"), "danger", busy || !draft.id || !!selectedRule?.usedBy?.length)) : null),
+              btn("载入最新规则", () => choose(selectedRule), "quiet", busy || !draft.id),
+              btn("保存规则", () => mutate(draft.id ? "save" : "create"), "accent", busy || !draft.name.trim() || !draft.text.trim())),
+            h("p", { className: "pl-library-ref" }, dirty() ? "有未保存规则草稿；切换页签后仍保留在本次页面内存。" : "规则草稿与载入版本一致"))));
     }
 
     function TransferPanel({ data, onCommitted }) {
@@ -245,23 +270,26 @@ window.__ModuleLoader__.load({
         finally { committing.current = false; if (request === sequence.current) setBusy(false); }
       }
       return h("section", { "aria-label": "配置与规则导入导出" },
-        h("p", { className: "pl-warning" }, "导出文件包含已保存的提示词和规则正文，请妥善保管。导入会追加副本，不自动启用，不覆盖已有配置。"),
-        btn("导出全部配置与规则", () => downloadBundle().catch(e => setError(e.message)), "", busy),
-        h("label", { className: "pl-field" }, "选择配置或规则 JSON 文件"),
-        h("input", { type: "file", accept: ".json,application/json", disabled: busy, onChange: selectFile }),
+        h("div", { className: "pl-page-heading" }, h("div", null, h("h1", null, "导入与导出"), h("p", null, "保存本地备份，或把已有配置添加到工作台。"))),
         error ? h("p", { className: "pl-error" }, error) : null,
-        pending ? h("div", null,
+        h("div", { className: "pl-transfer-grid" },
+          h("section", { className: "pl-surface pl-transfer-card" }, h("div", { className: "pl-transfer-icon" }, icon("document")), h("h2", null, "导出备份"),
+            h("p", null, "将全部已保存的配置和共享规则导出为 JSON 文件。文件包含正文，请妥善保管。"), btn("导出全部配置与规则", () => downloadBundle().catch(e => setError(e.message)), "", busy)),
+          h("section", { className: "pl-surface pl-transfer-card" }, h("div", { className: "pl-transfer-icon" }, icon("transfer")), h("h2", null, "导入配置"),
+            h("p", null, "先预览，再追加。已有配置保持原样，重复的 id 会自动重新分配，导入后不会自动启用。"),
+            h("input", { className: "pl-file-input", type: "file", "aria-label": "选择配置或规则 JSON 文件", accept: ".json,application/json", disabled: busy, onChange: selectFile }))),
+        pending ? h("div", { className: "pl-surface pl-import-preview" },
           h("h3", null, "导入预览"),
           h("p", null, `${pending.preview.profiles.length} 套配置、${pending.preview.ruleSets.length} 套共享规则`),
           ...pending.preview.profiles.map(item => h("p", { key: "p"+item.id }, "配置：" + item.name + (item.renamedId ? "（id 冲突，将分配新 id）" : ""))),
           ...pending.preview.ruleSets.map(item => h("p", { key: "r"+item.id }, "规则：" + item.name + (item.renamedId ? "（id 冲突，将分配新 id）" : ""))),
           btn("确认追加导入", commit, "accent", busy),
           btn("重新预览", () => preview(pending.bundle), "", busy),
-          btn("取消导入", () => setPending(null), "", busy)) : null);
+          btn("取消导入", () => setPending(null), "quiet", busy)) : null);
     }
 
     /**
-     * 会话页签里的主面板：提示词与规则、组装快照、设置三个页签。
+     * 会话页签里的主面板：配置、规则库、导入导出、组装快照和设置。
      *
      * 组件自身不持有业务状态：展示的内容都是最近一次 GET /prompt-lab/api 的快照，
      * 编辑动作再 POST 回同一接口；真正的状态在宿主进程侧的 lib/state.js 里。
@@ -291,6 +319,8 @@ window.__ModuleLoader__.load({
       // 编辑器里的规则草稿（同样是本地草稿）。
       const [ruleDraft, setRuleDraft] = useState(() => retainedDraft?.rules || "");
       const [nameInput, setNameInput] = useState("");
+      const [manageOpen, setManageOpen] = useState(false);
+      const [profileQuery, setProfileQuery] = useState("");
       const [, setEditorTick] = useState(0);
       const editor = useRef(retainedDraft ? { ...retainedDraft } : {
         id: "", prompt: "", rules: "", savedPrompt: "", savedRules: "", version: 1,
@@ -311,6 +341,7 @@ window.__ModuleLoader__.load({
           promptEnabled: profile.promptEnabled !== false, savedPromptEnabled: profile.promptEnabled !== false,
           rulesEnabled: profile.rulesEnabled !== false, savedRulesEnabled: profile.rulesEnabled !== false };
         retainedDraft = null;
+        setManageOpen(false);
         setEditId(profile.id); setDraft(profile.prompt); setRuleDraft(profile.rules);
       }
 
@@ -482,168 +513,118 @@ window.__ModuleLoader__.load({
       const profileText = [editor.current.promptEnabled && draft.trim(),
         editor.current.rulesEnabled && [ruleDraft.trim() && `## 当前规则集\n${ruleDraft.trim()}`, ...sharedRules].filter(Boolean).join("\n\n")].filter(Boolean).join("\n\n");
 
-      // 面板骨架：头部 + 页签 + 概览卡片 + 正文（唯一滚动区）+ 页脚。
-      // 这里先拼成一个 Fragment，返回时再交给宿主的视图区容器。
+      const editProfile = data?.profiles?.find(p => p.id === editId);
+      const tabs = [["profile", "提示词与规则", "document"], ["rules", "规则库", "layers"], ["transfer", "导入导出", "transfer"], ["assembly", "组装快照", "activity"], ["settings", "设置", "settings"]];
       const content = h(React.Fragment, null,
-        // 头部：左标题/副标题，右侧只有刷新按钮（面板由页签控制显示，不需要关闭按钮）。
         h("header", { className: "pl-head" },
-          h("div", null, h("div", { className: "pl-title" }, "提示词 · Prompt Lab"),
-            h("div", { className: "pl-sub" }, "系统提示词 · 配置 / 组装 / 过滤")),
-           h("div", { className: "pl-inline", style: { margin: 0 } }, btn("↻", () => refresh(true), "", saving))),
-        // 面板内页签（三选一）。切换时顺带把组装快照的「展开全文」复位，避免串页残留。
-        h("nav", { className: "pl-tabs" },
-          ...[["profile", "提示词与规则"], ["rules", "规则库"], ["transfer", "导入导出"], ["assembly", "组装快照"], ["settings", "设置"]].map(([k, title]) =>
-            h("button", { key: k, type: "button", className: "pl-tab" + (tab === k ? " current" : ""), onClick: () => { setTab(k); setShowText(false); } }, title))),
-          // 概览卡片：插件状态 / 当前配置 / 组装快照段数。
-          h("div", { className: "pl-cards" },
-            field("插件状态", statusNames[st.phase] || st.phase || "未知"),
-            field("当前配置", activeProfile?.name || "未知"),
-            field("进程最近一次快照", assembly ? `${assembly.sectionCount} 段${assembly.stale ? " · 待新请求验证" : ""}` : "尚未捕获")),
-          // 正文：唯一滚动区。错误条与「加载中」占位排在最上面，下面只渲染当前页签的内容。
-          h("div", { className: "pl-body" },
-            error ? h("div", { className: "pl-error" }, "请求失败：" + error) : null,
-            !data ? h("div", { className: "pl-muted" }, "正在加载本地接口…") : null,
-            data?.storage?.error ? h("p", { className: "pl-error" }, data.storage.error) : null,
-            data && !st.observerRegistered ? h("p", { className: "pl-warning" }, "组装观察与过滤未就绪：请确认 prompt-lab 插件行已启用，且宿主暴露了组装事件。") : null,
-            // —— 页签一：提示词与规则编辑 ——
-            tab === "profile" && data ? h(React.Fragment, null,
-              h("p", { className: "pl-warning" }, "参考 dsh-purge 的配置优先级与规则集管理；这里的规则是追加到提示词的普通文本，不会修改 DSH 的 AGENTS.md、CLAUDE.md 或宿主代码。"),
-              h("div", { className: "pl-inline" },
-                h("input", { className: "pl-select", value: nameInput, placeholder: "新建、复制或重命名时使用的名称", "aria-label": "配置名称", disabled: saving, maxLength: 80, onChange: e => setNameInput(e.target.value) }),
-                btn("新建配置", () => mutate("create", { name: nameInput }), "", saving || !nameInput.trim()),
-                btn("复制已保存配置", () => mutate("duplicate", nameInput.trim() ? { name: nameInput } : {}), "", saving || !editId),
-                btn("重命名", () => mutate("rename", { name: nameInput }), "", saving || !nameInput.trim()),
-                btn("删除配置", deleteProfile, "", saving || data.profiles.length <= 1),
-                btn("导出此配置", () => downloadBundle("profile", editId).catch(e => setError(e.message)), "", saving || !editId)),
-              // ① 选择要编辑的配置；右侧标记它是否就是当前启用项。
-              h("div", { className: "pl-inline" },
-                h("strong", null, "选择编辑的配置"),
-                h("select", { className: "pl-select", value: editId, disabled: saving, onChange: (e) => switchEditor(e.target.value) },
-                  ...(data.profiles || []).map((p) => h("option", { value: p.id, key: p.id }, p.name))),
-                h("span", { className: "pl-muted" }, selected === editId ? "● 当前启用" : "未启用")),
-              // ② 两个文本域就是这份配置的全部内容：系统提示词正文 + 追加规则。
-              h("label", { className: "pl-field" }, "系统提示词正文"),
-              h("label", { className: "pl-inline" }, h("input", { type: "checkbox", checked: editor.current.promptEnabled,
-                disabled: saving, onChange: e => edit("promptEnabled", e.target.checked) }), "启用正文段"),
-              h("textarea", { className: "pl-textarea", value: draft, disabled: saving, spellCheck: false, onChange: (e) => edit("prompt", e.target.value) }),
-              h("label", { className: "pl-field" }, "附加规则（自然语言，每行一条）"),
-              h("textarea", { className: "pl-textarea rules", value: ruleDraft, disabled: saving, spellCheck: false, onChange: (e) => edit("rules", e.target.value) }),
-              h("label", { className: "pl-inline" }, h("input", { type: "checkbox", checked: editor.current.rulesEnabled,
-                disabled: saving, onChange: e => edit("rulesEnabled", e.target.checked) }), "启用规则段（附加规则和共享规则）"),
-              h("strong", null, "引用共享规则（按以下顺序注入）"),
-              ...(editor.current.ruleIds || []).map((id, index, ids) => h("div", { className: "pl-inline", key: id },
-                h("span", null, `${index + 1}. ${data.ruleSets?.find(r => r.id === id)?.name || "规则已被删除，请移除引用"}`),
-                btn("↑", () => { const next = [...ids]; [next[index-1],next[index]]=[next[index],next[index-1]]; edit("ruleIds", next); }, "", saving || index === 0),
-                btn("↓", () => { const next = [...ids]; [next[index+1],next[index]]=[next[index],next[index+1]]; edit("ruleIds", next); }, "", saving || index === ids.length-1),
-                btn("移除引用", () => edit("ruleIds", ids.filter(value => value !== id)), "", saving))),
-              ...(data.ruleSets || []).filter(r => !(editor.current.ruleIds || []).includes(r.id)).map(r => h("div", { className: "pl-inline", key: r.id },
-                h("span", null, r.name + (r.enabled ? "" : "（已停用）")),
-                btn("添加引用", () => edit("ruleIds", [...(editor.current.ruleIds || []), r.id]), "", saving))),
-              // ③ 保存 / 启用；两个动作都只影响下一次 text() 求值，不改变已发出的请求。
-              h("div", { className: "pl-inline", style: { marginTop: 12 } },
-                // 正文为空或正在保存时禁止提交。
-                btn("保存配置", () => mutate("save"), "accent", saving || (editor.current.promptEnabled && !draft.trim())),
-                // 已是当前启用项时无需重复启用。
-                btn("启用这套配置", () => mutate("activate"), "", saving || selected === editId),
-                btn("载入最新版本", reloadEditor, "", saving),
-                h("span", { className: "pl-muted" }, "保存后下次 text() 求值使用新配置；修改已发请求无效")),
-              h("p", { className: "pl-muted" }, isDirty() ? "有未保存修改；切走宿主页签后，草稿会保留在本次页面内存中。" : "草稿与载入版本一致"),
-              h("details", { className: "pl-details" },
-                h("summary", null, "预览编辑器当前的完整提示词"), h("pre", { className: "pl-pre" }, profileText)),
-              h("details", { className: "pl-details" },
-                h("summary", null, `已保存的当前配置预览 · 版本 ${data.configRevision}`),
-                h("pre", { className: "pl-pre" }, data.configuredPrompt || "（空）")),
-              h("details", { className: "pl-details" },
-                h("summary", null, data.evaluation
-                  ? `最近一次 text() 求值 · ${data.evaluation.section || "combined"} · ${data.evaluation.evaluatedAt} · 版本 ${data.evaluation.configRevision}${data.evaluation.stale ? " · 配置已变化" : ""}`
-                  : "最近一次 text() 求值：尚未观察到"),
-                h("pre", { className: "pl-pre" }, data.evaluation?.text || "（空或尚未求值；不代表模型已接收）"))) : null,
-            tab === "rules" && data ? h(RuleManager, { data, onCommitted: acceptData }) : null,
-            tab === "transfer" && data ? h(TransferPanel, { data, onCommitted: acceptData }) : null,
-            // —— 页签二：组装快照 ——
-            tab === "assembly" && data ? h(React.Fragment, null,
-              h("p", { className: "pl-warning" }, "这是进程最近一次 system-prompt/assemble 观察快照，可能来自其他会话；事件后仍可能有宿主处理，不等于模型 API 最终请求。"),
-              assembly?.stale ? h("p", { className: "pl-warning" }, "配置或设置已变化；以下保留旧快照，待新请求验证。") : null,
-              assembly?.processingFailed ? h("p", { className: "pl-warning" }, "本次插件处理失败，返回了未处理结果。") : null,
-              h("label", { className: "pl-inline" },
-                h("input", { type: "checkbox", checked: showText, onChange: (e) => setShowText(e.target.checked) }),
-                " 展开显示完整提示词段"),
-              // 每段一个折叠块：段名、order、字数；勾选上面的「展开」时默认全部打开。
-              // 尚未捕获到组装事件时给出可操作提示。
-              !assembly ? h("p", { className: "pl-muted" }, "尚未观察到组装事件。请新建 DSH 会话并发送一次消息，再刷新；若仍无快照说明当前宿主没有向本插件暴露该事件。") :
-                h(React.Fragment, null,
-                  h("p", { className: "pl-muted" }, "观察时间：" + assembly.capturedAt + " ｜配置版本：" + assembly.configRevision + " ｜段数：" + assembly.sectionCount + (assembly.truncated ? " ｜因长度上限被截断" : "") + (assembly.identityBroken > 0 ? " ｜指纹脱敏 " + assembly.identityBroken + " 处" : "")),
-                  ...(assembly.sections || []).map((s) => h("details", { className: "pl-details", key: s.index, open: showText },
-                    h("summary", null, `#${s.index + 1} ${s.name} / order=${s.order ?? "?"} / ${s.retainedChars}/${s.chars} 字${s.truncated ? "（已截断）" : ""}`),
-                    h("pre", { className: "pl-pre" }, s.text || "（空）"))),
-                  // 动态上下文（“Current runtime context …”那段）：显示过滤后的最终形态。
-                  h("p", { className: "pl-inline", style: { marginTop: 14 } },
-                    h("strong", null, "动态上下文"),
-                    h("span", { className: "pl-muted" },
-                      (assembly.contextCount || 0) + " 条 ｜过滤：" + ({
-                        off: "关（原样）", strip: "去除", redact: "脱敏",
-                      }[assembly.contextFilter] || assembly.contextFilter)
-                      + (assembly.contextsRemoved > 0 ? " ｜本次去除 " + assembly.contextsRemoved + " 条" : ""))),
-                  ...(assembly.contexts || []).map((cx) => h("details", { className: "pl-details", key: "cx" + cx.index },
-                    h("summary", null, `${cx.name} / ${cx.retainedChars}/${cx.chars} 字${cx.truncated ? "（已截断）" : ""}`),
-                    h("pre", { className: "pl-pre" }, cx.text || "（空）"))))) : null,
-            // —— 页签三：设置 ——
-            tab === "settings" && data ? h(React.Fragment, null,
-              h("p", { className: "pl-warning" }, "设置在之后的组装中使用，已入库的历史不会回改；最终请求仍可能经过宿主的后续处理。"),
-              h("div", { className: "pl-inline" },
-                h("strong", null, "运行时上下文过滤"),
-                h("select", {
-                  className: "pl-select", value: filterMode, disabled: saving,
-                  onChange: (e) => mutate("settings.update", { contextFilter: e.target.value }),
-                },
-                  h("option", { value: "off" }, "关闭（原样注入）"),
-                  h("option", { value: "strip" }, "去除（整段不发给模型）"),
-                  h("option", { value: "redact" }, "脱敏（保留结构，遮路径/地址/时间）")),
-                h("span", { className: "pl-muted" }, saving ? "保存中…" : "已保存设置在之后的组装中使用")),
-              h("details", { className: "pl-details", open: true },
-                h("summary", null, "两种模式分别适合什么时候用"),
-                h("p", { style: { margin: "6px 0" } },
-                  "去除（strip）：把 assembly.contexts 整组清空——工作目录、沙箱/审批策略、宿主源码路径、GUI 地址都不再出现。注意其中也包含审批提示（工具要不要先问用户）等功能性句子，全去掉可能让模型更保守。"),
-                h("p", { style: { margin: "6px 0" } },
-                  "脱敏（redact）：保留每条贡献的结构和功能句，只把路径、URL、时间戳换成 <路径>/<URL>/<时间> 占位符——模型仍知道“有个工作目录、审批策略是什么”，但看不到具体机器信息。"),
-                h("p", { style: { margin: "6px 0" }, className: "pl-muted" },
-                  "范围说明：只处理这段动态上下文；轨迹里“Time sampled / Elapsed”那几行来自官方 dsh-time-context 插件（注入的是用户消息），不在此过滤范围内。")),
-              h("div", { className: "pl-inline", style: { marginTop: 10 } },
-                h("strong", null, "渠道指纹脱敏"),
-                h("select", {
-                  className: "pl-select", value: identityOn ? "on" : "off", disabled: saving,
-                  onChange: (e) => mutate("settings.update", { identityBreak: e.target.value === "on" }),
-                },
-                  h("option", { value: "off" }, "关闭"),
-                  h("option", { value: "on" }, "开启（身份句插零宽空格）")),
-                h("span", { className: "pl-muted" },
-                  (assembly?.identityBroken > 0 ? "上次命中 " + assembly.identityBroken + " 处 ｜" : "") + (saving ? "保存中…" : "已保存设置在之后的组装中使用"))),
-              h("details", { className: "pl-details", open: true },
-                h("summary", null, "渠道指纹脱敏是干什么的（WorkBuddy 400 / 11128）"),
-                h("p", { style: { margin: "6px 0" } },
-                  "WorkBuddy 国内网关对系统提示词做精确子串匹配，命中第三方 agent 身份句即拒（400/11128）。本宿主的提示词里有三处这样的句子：coding-agent 身份句（首行，带模型名）、Harness 身份句、Web GUI 说明段——三处全处理才有效，只改一处不够。"),
-                h("p", { style: { margin: "6px 0" } },
-                  "开启后：在这几处句子的词界插入零宽空格（U+200B）——网关匹配失配，模型读到的每个词不变，体积只增约 0.3%。清单是实测快照，网关加词条时需要更新插件。"),
-                h("p", { style: { margin: "6px 0" }, className: "pl-muted" },
-                  "只处理系统提示词（sections + contexts）；若历史消息里复述过这些句子（assistant 角色），本层覆盖不到，需要换新会话或让中转层处理。")),
-              h("details", { className: "pl-details" },
-                h("summary", null, "进程最近一次捕获的上下文形态"),
-                assembly?.stale ? h("p", { className: "pl-muted" }, "这是旧配置的观察结果，待新请求验证。") : null,
-                !assembly ? h("p", { className: "pl-muted" }, "还没有组装快照：发送一条消息后再回来看。")
-                  : h("pre", { className: "pl-pre" },
-                    (assembly.contexts || []).map((cx) => cx.text).join("\n\n") || "（空：没有上下文贡献，或已整组去除）")),
-              h("details", { className: "pl-details" },
-                h("summary", null, "设置存在哪"),
-                h("p", { className: "pl-muted", style: { margin: "6px 0" } },
-                  "DSH_HOME/prompt-lab/settings.json（原子写），重启后仍然生效；删掉该文件即回到默认“关闭”。"))) : null),
-          // 页脚：左侧点明能力边界（只读观察 + 显式保存配置），右侧是这份快照的生成时间。
-          h("footer", { className: "pl-foot" },
-            h("span", null, "配置管理 · 进程级组装观察"),
-            h("span", null, data ? timeText(data.generatedAt) : "未连接")));
+          h("div", { className: "pl-brand" }, h("div", { className: "pl-brand-mark", "aria-hidden": true }, "P/L"),
+            h("div", null, h("div", { className: "pl-title" }, "Prompt Lab"), h("div", { className: "pl-sub" }, "提示词工作台"))),
+          h("div", { className: "pl-header-actions" },
+            h("span", { className: "pl-connection" }, h("i", { className: "pl-dot" + (!data || error ? " pending" : "") }), data ? (error ? "连接异常" : "本地已连接") : "连接中"),
+            iconButton("↻", "refresh", () => refresh(true), saving))),
+        h("nav", { className: "pl-tabs", "aria-label": "提示词工作台导航" },
+          ...tabs.map(([key, title, glyph]) => h("button", { key, type: "button", className: "pl-tab" + (tab === key ? " current" : ""), "aria-pressed": tab === key,
+            onClick: () => { setTab(key); setShowText(false); setManageOpen(false); } }, icon(glyph), h("span", null, title)))),
+        h("div", { className: "pl-body" }, h("div", { className: "pl-page" },
+          error ? h("div", { className: "pl-error", role: "alert" }, "请求失败：" + error) : null,
+          !data ? h("div", { className: "pl-empty", role: "status" }, "正在加载本地配置…") : null,
+          data?.storage?.error ? h("p", { className: "pl-error", role: "alert" }, data.storage.error) : null,
+          data && !st.observerRegistered ? h("p", { className: "pl-notice" }, "组装观察尚未就绪，请确认插件已启用。配置仍可编辑。") : null,
+          tab === "profile" && data ? h(React.Fragment, null,
+            h("div", { className: "pl-page-heading" }, h("div", null, h("h1", null, "提示词配置"), h("p", null, "为不同任务保存配置，自由组合正文与规则。")),
+              h("span", { className: "pl-kicker" }, (data.profiles || []).length + " 套配置")),
+            h("div", { className: "pl-mobile-picker" },
+              h("select", { className: "pl-select", "aria-label": "选择编辑的配置", value: editId, disabled: saving, onChange: e => switchEditor(e.target.value) },
+                ...data.profiles.map(p => h("option", { value: p.id, key: p.id }, p.name)))),
+            h("div", { className: "pl-workspace" },
+              h("aside", { className: "pl-collection", "aria-label": "配置列表" },
+                h("div", { className: "pl-collection-head" }, "我的配置", h("span", { className: "pl-count" }, data.profiles.length), iconButton("打开新建配置", "plus", () => setManageOpen(true), saving)),
+                h("label", { className: "pl-search" }, icon("search"), h("input", { type: "search", value: profileQuery, "aria-label": "搜索配置", placeholder: "搜索配置…", onChange: e => setProfileQuery(e.target.value) })),
+                h("div", { className: "pl-profile-items" },
+                  ...data.profiles.filter(p => (p.name + " " + p.prompt).toLocaleLowerCase().includes(profileQuery.toLocaleLowerCase())).map(p => h("button", {
+                    key: p.id, type: "button", className: "pl-profile-item" + (editId === p.id ? " selected" : ""), "data-profile-id": p.id, "aria-pressed": editId === p.id,
+                    onClick: () => switchEditor(p.id), disabled: saving }, icon("document"),
+                    h("span", { className: "pl-profile-copy" }, h("span", { className: "pl-profile-name" }, p.name), h("span", { className: "pl-profile-snippet" }, p.prompt.trim().split("\n")[0] || "暂无正文")),
+                    p.id === selected ? h("i", { className: "pl-dot", title: "当前启用" }) : null))),
+                h("div", { className: "pl-collection-foot" }, "切换编辑不会改变当前启用的配置")),
+              h("div", null,
+                h("section", { className: "pl-editor-card", "aria-label": "配置编辑器" },
+                  h("div", { className: "pl-editor-head" }, h("div", null, h("h2", null, editProfile?.name || "配置编辑器"), h("p", null, "编辑后保存，下次组装时生效。")),
+                    h("div", { className: "pl-editor-head-actions" }, h("span", { className: "pl-badge" + (selected === editId ? " active" : "") }, selected === editId ? "当前启用" : "未启用"),
+                      h("div", { className: "pl-manage" },
+                        h("button", { className: "pl-btn quiet", type: "button", "aria-expanded": manageOpen, onClick: () => setManageOpen(!manageOpen), disabled: saving }, icon("more"), "管理配置"),
+                        manageOpen ? h("div", { className: "pl-manage-panel", role: "group", "aria-label": "管理配置操作", onKeyDown: e => { if (e.key === "Escape") setManageOpen(false); } },
+                          h("label", { className: "pl-kicker", htmlFor: "pl-profile-name" }, "新建 / 重命名"),
+                          h("input", { id: "pl-profile-name", className: "pl-select", value: nameInput, placeholder: "输入配置名称", "aria-label": "配置名称", disabled: saving, maxLength: 80, onChange: e => setNameInput(e.target.value) }),
+                          h("div", { className: "pl-menu-actions" },
+                            btn("新建配置", () => mutate("create", { name: nameInput }), "", saving || !nameInput.trim()),
+                            btn("重命名", () => mutate("rename", { name: nameInput }), "", saving || !nameInput.trim()),
+                            btn("复制已保存配置", () => mutate("duplicate", nameInput.trim() ? { name: nameInput } : {}), "", saving || !editId),
+                            btn("导出此配置", () => downloadBundle("profile", editId).catch(e => setError(e.message)), "", saving || !editId),
+                            btn("删除配置", deleteProfile, "danger", saving || data.profiles.length <= 1))) : null))),
+                  h("div", { className: "pl-editor-content" },
+                  h("div", { className: "pl-editor-section" },
+                    h("div", { className: "pl-section-head" }, h("div", null, h("h3", { className: "pl-section-title" }, "系统提示词"), h("p", null, "描述角色、目标与回答方式")),
+                      h("div", { className: "pl-section-meta" }, h("span", null, draft.length.toLocaleString() + " 字"), toggle("启用正文段", editor.current.promptEnabled, value => edit("promptEnabled", value), saving))),
+                    h("textarea", { className: "pl-textarea main", "aria-label": "系统提示词正文", value: draft, placeholder: "在这里编写你的系统提示词…", disabled: saving, spellCheck: false, onChange: e => edit("prompt", e.target.value) })),
+                  h("div", { className: "pl-divider" }),
+                  h("div", { className: "pl-editor-section" },
+                    h("div", { className: "pl-section-head" }, h("div", null, h("h3", { className: "pl-section-title" }, "规则"), h("p", null, "附加规则仅用于当前配置，共享规则可重复使用")), toggle("启用规则段", editor.current.rulesEnabled, value => edit("rulesEnabled", value), saving)),
+                    h("details", { className: "pl-details", key: "extra-" + editId }, h("summary", null, "附加规则", ruleDraft.length ? " · " + ruleDraft.length.toLocaleString() + " 字" : " · 可选"),
+                      h("div", { className: "pl-details-content" }, h("textarea", { className: "pl-textarea rules", "aria-label": "附加规则", value: ruleDraft, placeholder: "添加只在这套配置中使用的规则…", disabled: saving, spellCheck: false, onChange: e => edit("rules", e.target.value) }))),
+                    h("div", { className: "pl-section-head", style: { marginTop: 19 } }, h("span", { className: "pl-section-title" }, "共享规则", h("span", { className: "pl-count" }, editor.current.ruleIds.length)), h("span", { className: "pl-kicker" }, "按列表顺序注入")),
+                    editor.current.ruleIds.length ? h("div", { className: "pl-rule-list" }, ...editor.current.ruleIds.map((id, index, ids) => h("div", { className: "pl-inline", key: id },
+                      h("span", null, `${index + 1}. ${data.ruleSets?.find(r => r.id === id)?.name || "规则已删除，请移除引用"}`),
+                      btn("↑", () => { const next = [...ids]; [next[index-1],next[index]]=[next[index],next[index-1]]; edit("ruleIds", next); }, "", saving || index === 0),
+                      btn("↓", () => { const next = [...ids]; [next[index+1],next[index]]=[next[index],next[index+1]]; edit("ruleIds", next); }, "", saving || index === ids.length-1),
+                      btn("移除引用", () => edit("ruleIds", ids.filter(value => value !== id)), "", saving)))) : null,
+                    h("div", { className: "pl-rule-picker" },
+                      ...(data.ruleSets || []).filter(r => !editor.current.ruleIds.includes(r.id)).map(r => h("div", { className: "pl-add-rule-row pl-inline", key: r.id },
+                        h("span", null, r.name + (r.enabled ? "" : "（已停用）")), btn("添加引用", () => edit("ruleIds", [...editor.current.ruleIds, r.id]), "quiet", saving))),
+                      !data.ruleSets?.length ? h("div", { className: "pl-empty" }, "还没有共享规则。", btn("前往规则库", () => setTab("rules"), "quiet")) : null))),
+                  h("div", { className: "pl-actionbar" },
+                    h("span", { className: "pl-save-state" + (isDirty() ? " dirty" : "") }, h("i", { className: "pl-dot" + (isDirty() ? " pending" : "") }), isDirty() ? "有未保存修改" : "草稿与载入版本一致"),
+                    btn("载入最新版本", reloadEditor, "quiet", saving),
+                    btn("启用这套配置", () => mutate("activate"), "", saving || selected === editId),
+                    btn("保存配置", () => mutate("save"), "accent", saving || (editor.current.promptEnabled && !draft.trim())))),
+                h("details", { className: "pl-inspector" }, h("summary", null, "预览与运行信息"),
+                  h("details", { className: "pl-details" }, h("summary", null, "预览编辑器当前的完整提示词"), h("pre", { className: "pl-pre" }, profileText)),
+                  h("details", { className: "pl-details" }, h("summary", null, `已保存的当前配置预览 · 版本 ${data.configRevision}`), h("pre", { className: "pl-pre" }, data.configuredPrompt || "（空）")),
+                  h("details", { className: "pl-details" }, h("summary", null, data.evaluation ? `最近一次 text() 求值 · ${data.evaluation.section || "combined"} · ${data.evaluation.evaluatedAt}${data.evaluation.stale ? " · 配置已变化" : ""}` : "最近一次 text() 求值：尚未观察到"), h("pre", { className: "pl-pre" }, data.evaluation?.text || "（空或尚未求值；不代表模型已接收）")))))) : null,
+          tab === "rules" && data ? h(RuleManager, { data, onCommitted: acceptData }) : null,
+          tab === "transfer" && data ? h(TransferPanel, { data, onCommitted: acceptData }) : null,
+          tab === "assembly" && data ? h(React.Fragment, null,
+            h("div", { className: "pl-page-heading" }, h("div", null, h("h1", null, "组装快照"), h("p", null, "查看进程最近一次观察到的提示词与动态上下文。")),
+              h("label", { className: "pl-inline" }, h("input", { type: "checkbox", checked: showText, onChange: e => setShowText(e.target.checked) }), "展开正文")),
+            h("p", { className: "pl-notice" }, "快照可能来自其他会话，不等于模型 API 最终请求正文。"),
+            assembly?.stale ? h("p", { className: "pl-notice" }, "配置或设置已变化，当前快照待新请求验证。") : null,
+            assembly?.processingFailed ? h("p", { className: "pl-error" }, "本次处理失败，显示未处理结果。") : null,
+            !assembly ? h("div", { className: "pl-surface pl-empty" }, icon("activity"), h("p", null, "尚未捕获组装快照"), h("p", null, "发送一次新请求后，快照会自动出现在这里。")) : h(React.Fragment, null,
+              h("div", { className: "pl-cards" }, field("提示词段", assembly.sectionCount), field("动态上下文", assembly.contextCount || 0), field("观察时间", timeText(assembly.capturedAt))),
+              h("p", { className: "pl-kicker" }, "配置版本 " + assembly.configRevision + (assembly.truncated ? " · 内容已截断" : "")),
+              ...(assembly.sections || []).map(s => h("details", { className: "pl-details", key: s.index, open: showText },
+                h("summary", null, `${s.name} · ${s.retainedChars}/${s.chars} 字${s.truncated ? "（已截断）" : ""}`), h("pre", { className: "pl-pre" }, s.text || "（空）"))),
+              h("div", { className: "pl-section-head", style: { marginTop: 24 } }, h("h2", { className: "pl-section-title" }, "动态上下文"), h("span", { className: "pl-kicker" }, "过滤：" + ({ off: "关闭", strip: "去除", redact: "脱敏" }[assembly.contextFilter] || assembly.contextFilter))),
+              ...(assembly.contexts || []).map(cx => h("details", { className: "pl-details", key: "cx" + cx.index }, h("summary", null, `${cx.name} · ${cx.retainedChars}/${cx.chars} 字${cx.truncated ? "（已截断）" : ""}`), h("pre", { className: "pl-pre" }, cx.text || "（空）"))))) : null,
+          tab === "settings" && data ? h(React.Fragment, null,
+            h("div", { className: "pl-page-heading" }, h("div", null, h("h1", null, "设置"), h("p", null, "设置自动保存，并在之后的组装中使用。"))),
+            h("section", { className: "pl-setting-group" },
+              h("div", { className: "pl-setting-row" }, h("div", { className: "pl-setting-copy" }, h("h2", null, "运行时上下文"), h("p", null, "保留原文、遮盖路径等具体值，或去除整组上下文。去除也会移除其中的审批等功能提示。")),
+                h("select", { className: "pl-select", "aria-label": "运行时上下文过滤", value: filterMode, disabled: saving, onChange: e => mutate("settings.update", { contextFilter: e.target.value }) }, h("option", { value: "off" }, "关闭 · 原样保留"), h("option", { value: "redact" }, "脱敏 · 保留结构"), h("option", { value: "strip" }, "去除 · 整组清空"))),
+              h("div", { className: "pl-setting-row" }, h("div", { className: "pl-setting-copy" }, h("h2", null, "渠道指纹脱敏"), h("p", null, "沿用现有身份句文本处理，仅影响之后的系统提示词组装。")), toggle("渠道指纹脱敏", identityOn, value => mutate("settings.update", { identityBreak: value }), saving))),
+            h("p", { className: "pl-setting-note" }, "修改不会回写历史请求。设置在本地保存，重新打开后仍会保留。"),
+            h("details", { className: "pl-details", style: { marginTop: 24 } }, h("summary", null, "设置说明与生效范围"), h("div", { className: "pl-details-content pl-setting-note" },
+              h("p", null, "脱敏保留结构和功能句，只遮盖路径、URL、时间戳；去除会把动态上下文整组清空。"),
+              h("p", null, "渠道指纹处理沿用已知句子清单，历史消息中的文本不在此范围。轨迹中的官方时间消息不受上下文过滤影响。"),
+              h("p", null, "本地文件：DSH_HOME/prompt-lab/settings.json。"))),
+            h("details", { className: "pl-details" }, h("summary", null, "进程最近一次捕获的上下文形态"), h("pre", { className: "pl-pre" }, assembly ? (assembly.stale ? "（旧配置观察结果，待新请求验证）\n\n" : "") + ((assembly.contexts || []).map(cx => cx.text).join("\n\n") || "（空）") : "尚未捕获"))) : null)),
+        h("footer", { className: "pl-foot" }, h("span", null, "本地配置 · " + (activeProfile?.name || "正在连接")), h("span", null, "v" + (data?.version || "0.5.2") + (data ? " · 更新于 " + timeText(data.generatedAt) : ""))));
+
       // 宿主把本组件渲染在 conversation.view 的视图区里（.viewArea 是 flex:1 的纵向容器），
       // 这里只负责填满它：显示 / 隐藏由宿主的页签切换决定，组件自己不判断是否可见。
       // role=region + aria-label 让读屏用户知道这里是插件自己的一个区域。
-      return h("section", { className: "pl-view", role: "region", "aria-label": "提示词（Prompt Lab）" }, content);
+      return h("section", { className: "pl-view", role: "region", "aria-label": "提示词（Prompt Lab）",
+        onPointerDown: e => { if (manageOpen && !e.target.closest(".pl-manage")) setManageOpen(false); } }, content);
     }
 
     /**

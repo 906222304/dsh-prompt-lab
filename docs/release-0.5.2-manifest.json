@@ -1,0 +1,50 @@
+{
+  "version": "0.5.2",
+  "releaseDate": "2026-11-07",
+  "timezone": "Asia/Hong_Kong",
+  "sourceTag": "v0.5.2",
+  "baselineTag": "v0.5.1",
+  "baselineCommit": "823e081",
+  "designReference": {
+    "repository": "https://github.com/yetone/magpie",
+    "commit": "f9a88c4fbeec771f71f2d05fbb77ce1a6239d035",
+    "implementation": "Independently authored CSS, React layout and SVG icons"
+  },
+  "package": {
+    "filename": "dsh-prompt-lab-0.5.2.tgz",
+    "bytes": 62388,
+    "files": 15,
+    "sha256": "1C7007C8E0D07CCF86529EFDD3651B6DCF23AD3176E7F0A21CA177E39E0E8D71",
+    "loadedFromExtractedArchive": true
+  },
+  "verification": {
+    "nodeTests": { "passed": 59, "failed": 0, "skipped": 0 },
+    "syntaxPassed": true,
+    "realChromiumReactDOM": true,
+    "viewportWidths": [1200, 520, 360],
+    "themes": ["light", "dark"],
+    "renderedPages": ["profile", "rules", "transfer", "settings", "assembly"],
+    "realHostVersion": "0.2.2-rc.1",
+    "realSystemPromptAndWebServerPassed": true,
+    "live": {
+      "version": "0.5.2",
+      "clientRevision": "6af859657b35",
+      "clientSourceMatched": true,
+      "profileCount": 3,
+      "ruleSetCount": 0,
+      "incrementalResponseBytes": 41,
+      "exportPassed": true,
+      "importPreviewPassed": true,
+      "userDataFilesUnchanged": true,
+      "configuredPromptUnchanged": true,
+      "backupDirectory": "C:/Users/yyyyyytd/.dsh/backups/prompt-lab-0.5.2-1793982571062",
+      "rollbackPackageVersion": "0.5.1"
+    }
+  },
+  "notes": [
+    "This manifest is outside the npm files allowlist and is not included in the tgz whose hash it records.",
+    "Screenshots contain isolated fixtures only.",
+    "The native DSH window was not directly automated; real Chromium React DOM and real DSH modules were verified separately.",
+    "No npm publication or remote git push was performed."
+  ]
+}
