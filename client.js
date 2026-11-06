@@ -47,6 +47,9 @@ window.__ModuleLoader__.load({
 @container(max-width:850px){.pl-workspace,.pl-library-layout{grid-template-columns:minmax(0,1fr)}.pl-collection{display:none}.pl-mobile-picker{display:flex;align-items:center;gap:8px;margin-bottom:14px}.pl-mobile-picker>.pl-select{flex:1;width:100%}.pl-editor-section{padding:19px}.pl-editor-head{padding:18px 19px}.pl-divider{margin:0 19px}.pl-library-editor{padding:20px}.pl-actionbar{padding:13px 19px}.pl-transfer-grid{grid-template-columns:1fr}}
 @container(max-width:500px){.pl-head{padding:16px 16px 12px}.pl-tabs{padding:0 16px 13px;gap:4px}.pl-tab{padding:6px 9px;font-size:11px;gap:5px}.pl-tab svg{width:12px;height:12px}.pl-body{padding:20px 15px 24px}.pl-title{font-size:15px}.pl-connection{display:none}.pl-page-heading{margin-bottom:15px}.pl-page-heading h1{font-size:17px}.pl-editor-head{flex-wrap:wrap;gap:8px}.pl-editor-head-actions{width:100%;justify-content:space-between}.pl-editor-section{padding:16px}.pl-divider{margin:0 16px}.pl-manage{margin-left:auto}.pl-actionbar{padding:12px 16px}.pl-actionbar .pl-save-state{width:100%;margin-bottom:2px}.pl-actionbar .pl-btn{flex:1}.pl-setting-row{padding:17px 18px;align-items:flex-start;gap:13px;flex-direction:column}.pl-setting-row .pl-select{width:100%;max-width:100%}.pl-foot{padding:8px 16px}.pl-cards{grid-template-columns:1fr}.pl-card+.pl-card{border-left:0;border-top:1px solid var(--pl-line)}.pl-transfer-card{padding:20px}.pl-section-meta{gap:8px}.pl-library-actions .pl-btn{flex:1}.pl-library-editor{padding:17px}.pl-rule-list .pl-inline{flex-wrap:wrap}.pl-rule-list .pl-inline>span{flex-basis:100%;margin-bottom:3px}}
 .pl-diagnostics{margin-top:24px}.pl-diagnostics>summary{display:flex;align-items:center;gap:10px}.pl-diagnostics>summary::before{content:'▸';color:var(--pl-muted);font-size:10px}.pl-diagnostics[open]>summary::before{content:'▾'}.pl-diagnostics>summary .pl-kicker{margin-left:auto}.pl-diagnostics .pl-setting-note{padding:0;margin-bottom:12px}.pl-diagnostics .pl-notice{margin:12px 0}.pl-diagnostic-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 0;font-size:11px;flex-wrap:wrap}.pl-diagnostic-row+.pl-diagnostic-row{border-top:1px solid var(--pl-line)}.pl-diagnostic-row>span:first-child{font-weight:550;flex:none}.pl-diagnostic-row>span:last-child{color:var(--pl-muted);overflow-wrap:anywhere}.pl-diagnostics .pl-pre{margin-top:10px}
+.pl-processing-head{padding:20px 22px 0}.pl-processing-head h2{font-size:14px;font-weight:600}.pl-processing-head p{font-size:11px;color:var(--pl-muted);margin-top:5px}.pl-current-setting{margin:0 22px 18px;padding:10px 12px;border-radius:7px;background:var(--pl-pill);font-size:11px;line-height:1.8;color:var(--pl-muted)}.pl-inline-help{margin:0 22px 20px}.pl-inline-help>summary{cursor:pointer;font-size:11px;color:var(--pl-muted);padding:0 0 8px}.pl-help-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.pl-help-item{padding:14px;border:1px solid var(--pl-line);border-radius:8px;min-width:0}.pl-help-item h3,.pl-help-copy h3{font-size:12px;font-weight:550;margin-bottom:5px}.pl-help-item p,.pl-help-copy p{font-size:11px;line-height:1.9;color:var(--pl-muted)}.pl-help-item .pl-example{margin-top:10px;font:11px/1.8 Consolas,'Microsoft YaHei UI',monospace;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--pl-text)}.pl-help-copy p+p{margin-top:8px}.pl-help-copy h3:not(:first-child){margin-top:17px}.pl-advanced{border:0;border-top:1px solid var(--pl-line);border-radius:0;margin:0;background:transparent}.pl-advanced>summary{display:flex;align-items:center;gap:9px;padding:17px 22px;list-style:none}.pl-advanced>summary::-webkit-details-marker{display:none}.pl-advanced>summary::before{content:'▸';font-size:10px;color:var(--pl-muted)}.pl-advanced[open]>summary::before{content:'▾'}.pl-advanced>summary .pl-badge{margin-left:auto}.pl-advanced .pl-setting-row{padding-bottom:14px}.pl-advanced .pl-help-copy{padding:0 22px 21px}.pl-advanced .pl-setting-copy p{max-width:660px}.pl-setting-group:has(.pl-processing-head)>.pl-setting-row{border-top:0}
+@container(max-width:850px){.pl-help-grid{grid-template-columns:1fr}}
+@container(max-width:500px){.pl-processing-head{padding:18px 18px 0}.pl-current-setting{margin:0 18px 16px}.pl-inline-help{margin:0 18px 17px}.pl-advanced>summary{padding:16px 18px;flex-wrap:wrap}.pl-advanced .pl-help-copy{padding:0 18px 18px}.pl-advanced>summary .pl-badge{font-size:9px}.pl-help-item{padding:12px}}
 @media(prefers-reduced-motion:reduce){.pl-view *{transition:none!important}}
 `;
 
@@ -505,6 +508,11 @@ window.__ModuleLoader__.load({
       const filterMode = data?.settings?.contextFilter || "off";
       // 渠道指纹脱敏开关（与上下文过滤独立、可叠加）。
       const identityOn = data?.settings?.identityBreak === true;
+      const environmentEffect = {
+        off: "保留宿主附加的环境原文，包括其中的路径、地址及策略说明。",
+        redact: "按内置规则替换环境信息中的路径、URL 和时间戳，保留句子结构与策略说明；不是全量隐私清理。",
+        strip: "移除宿主附加的整组环境信息，其中的工作目录及沙箱、审批等策略说明也不会提供给模型。宿主实际权限不变。",
+      }[filterMode];
       // 编辑器预览文本：与宿主端 lib/state.js 的 profileText() 拼装规则保持一致
       // （正文 + 可选的「## 当前规则集」段），因此预览看到的就是下一次注入会用的文本。
       const sharedRules = (editor.current.ruleIds || []).map(id => data?.ruleSets?.find(r => r.id === id))
@@ -593,16 +601,31 @@ window.__ModuleLoader__.load({
           tab === "rules" && data ? h(RuleManager, { data, onCommitted: acceptData }) : null,
           tab === "transfer" && data ? h(TransferPanel, { data, onCommitted: acceptData }) : null,
           tab === "settings" && data ? h(React.Fragment, null,
-            h("div", { className: "pl-page-heading" }, h("div", null, h("h1", null, "设置"), h("p", null, "设置自动保存，并在之后的组装中使用。"))),
+            h("div", { className: "pl-page-heading" }, h("div", null, h("h1", null, "设置"), h("p", null, "控制环境信息的提供方式，并按需启用渠道兼容。"))),
             h("section", { className: "pl-setting-group" },
-              h("div", { className: "pl-setting-row" }, h("div", { className: "pl-setting-copy" }, h("h2", null, "运行时上下文"), h("p", null, "保留原文、遮盖路径等具体值，或去除整组上下文。去除也会移除其中的审批等功能提示。")),
-                h("select", { className: "pl-select", "aria-label": "运行时上下文过滤", value: filterMode, disabled: saving, onChange: e => mutate("settings.update", { contextFilter: e.target.value }) }, h("option", { value: "off" }, "关闭 · 原样保留"), h("option", { value: "redact" }, "脱敏 · 保留结构"), h("option", { value: "strip" }, "去除 · 整组清空"))),
-              h("div", { className: "pl-setting-row" }, h("div", { className: "pl-setting-copy" }, h("h2", null, "渠道指纹脱敏"), h("p", null, "沿用现有身份句文本处理，仅影响之后的系统提示词组装。")), toggle("渠道指纹脱敏", identityOn, value => mutate("settings.update", { identityBreak: value }), saving))),
-            h("p", { className: "pl-setting-note" }, "修改不会回写历史请求。设置在本地保存，重新打开后仍会保留。"),
-            h("details", { className: "pl-details", style: { marginTop: 24 } }, h("summary", null, "设置说明与生效范围"), h("div", { className: "pl-details-content pl-setting-note" },
-              h("p", null, "脱敏保留结构和功能句，只遮盖路径、URL、时间戳；去除会把动态上下文整组清空。"),
-              h("p", null, "渠道指纹处理沿用已知句子清单，历史消息中的文本不在此范围。轨迹中的官方时间消息不受上下文过滤影响。"),
-              h("p", null, "本地文件：DSH_HOME/prompt-lab/settings.json。"))),
+              h("div", { className: "pl-processing-head" }, h("h2", null, "提示词处理"), h("p", null, "环境信息控制提供给模型的内容；渠道兼容只处理特定身份句，两项可以独立使用。")),
+              h("div", { className: "pl-setting-row" }, h("div", { className: "pl-setting-copy" }, h("h2", null, "环境信息"), h("p", null, "宿主自动附加的工作目录、路径、界面地址及策略说明；不包括你编写的提示词和聊天消息。")),
+                h("select", { className: "pl-select", "aria-label": "环境信息处理方式", "aria-describedby": "pl-environment-effect", value: filterMode, disabled: saving, onChange: e => mutate("settings.update", { contextFilter: e.target.value }) }, h("option", { value: "off" }, "原样保留"), h("option", { value: "redact" }, "隐藏具体值"), h("option", { value: "strip" }, "整组移除"))),
+              h("p", { className: "pl-current-setting", id: "pl-environment-effect", role: "status" }, environmentEffect),
+              h("details", { className: "pl-inline-help", "aria-label": "环境信息处理详情" }, h("summary", null, "三种方式怎么选？查看处理示例与范围"),
+                h("div", { className: "pl-help-grid" },
+                  h("div", { className: "pl-help-item" }, h("h3", null, "原样保留 · 默认"), h("p", null, "提供完整环境信息，让模型了解真实工作目录和宿主说明。不做替换或移除。"), h("pre", { className: "pl-example" }, "工作目录：D:\\work\\demo\n→ 保留原文")),
+                  h("div", { className: "pl-help-item" }, h("h3", null, "隐藏具体值"), h("p", null, "按匹配规则将路径、URL、ISO 时间戳替换为占位符，保留结构和功能句。无法保证识别所有路径或敏感信息。"), h("pre", { className: "pl-example" }, "D:\\work\\demo → <路径>\nhttps://example.com → <URL>\nISO 时间戳 → <时间>")),
+                  h("div", { className: "pl-help-item" }, h("h3", null, "整组移除"), h("p", null, "不提供这整组环境信息。工作目录和其中的沙箱、审批说明一起移除，可能影响模型判断；宿主实际权限与审批机制不变。"), h("pre", { className: "pl-example" }, "整组环境信息\n→ 移除"))),
+                h("p", { className: "pl-setting-note", style: { marginTop: 12 } }, "只处理宿主附加的环境信息。正文、规则、聊天消息和工具结果不由此选项清理；官方单独注入的时间消息也不在此范围。")),
+              h("details", { className: "pl-details pl-advanced", "aria-label": "高级兼容性" },
+                h("summary", null, "高级兼容性", h("span", { className: "pl-badge" + (identityOn ? " active" : "") }, "渠道身份句兼容 · " + (identityOn ? "已开启" : "已关闭"))),
+                h("div", { className: "pl-setting-row" }, h("div", { className: "pl-setting-copy" }, h("h2", null, "渠道身份句兼容"), h("p", null, "针对特定渠道按身份句进行文本匹配的兼容选项。默认关闭；正常调用无需开启。")), toggle("渠道身份句兼容", identityOn, value => mutate("settings.update", { identityBreak: value }), saving)),
+                h("div", { className: "pl-help-copy" },
+                  h("h3", null, "什么时候用"), h("p", null, "用于排查已知的 WorkBuddy 400 / 11128 身份句匹配问题。该报错也可能有其他原因，开启不保证解决所有渠道拒绝。"),
+                  h("h3", null, "具体处理什么"), h("p", null, "仅对内置清单命中的 DSH / coding agent 身份介绍和来源说明，在词间插入不可见的零宽空格（U+200B），改变连续文本的匹配形式，不删除整句。处理范围为组装中的提示词段及环境信息。"),
+                  h("h3", null, "与隐藏具体值有什么区别"), h("p", null, "环境信息选项替换或移除内容；此开关只改变已知身份句的文本形式，不负责隐藏路径、地址、API Key 或聊天内容，也不会改变模型能力和宿主权限。"),
+                  h("h3", null, "生效与限制"), h("p", null, "只影响后续新组装，不修改历史消息；内置匹配清单之外的句子不会处理。零命中不表示开关关闭；零宽字符仍属于实际发送的文本。")))),
+            h("p", { className: "pl-setting-note" }, "当前 DSH 共用设置 · 自动保存 · 后续新请求生效"),
+            h("details", { className: "pl-details", style: { marginTop: 24 } }, h("summary", null, "生效范围与保存方式"), h("div", { className: "pl-details-content pl-help-copy" },
+              h("h3", null, "设置由当前 DSH 共用"), h("p", null, "不随提示词配置切换，重新打开后仍保留。修改会自动保存；失败时页面会提示，不会把未保存的值当作成功。"),
+              h("h3", null, "只影响之后的新组装"), h("p", null, "不会回写已有消息和历史轨迹，也不修改你保存的提示词原文。两项同时开启时，先处理环境信息，再处理仍存在的已知身份句。"),
+              h("h3", null, "如何核对结果"), h("p", null, "发送一次新请求后，在下方诊断查看最近观察。设置值和服务已注册不等于模型已收到；进程观察可能来自其他会话，后续仍可能经过宿主处理。"))),
             h("details", { className: "pl-details pl-diagnostics", "aria-label": "Prompt Lab 诊断" },
               h("summary", null, "诊断", h("span", { className: "pl-kicker" }, "注入与过滤")),
               h("div", { className: "pl-details-content" },
@@ -624,9 +647,9 @@ window.__ModuleLoader__.load({
                   }),
                   !assembly.processingFailed ? h(React.Fragment, null,
                     h("div", { className: "pl-diagnostic-row" }, h("span", null, "本次上下文过滤"), h("span", null,
-                      ({ off: "关闭", strip: "去除", redact: "脱敏" }[assembly.contextFilter] || "未知") + ` · 去除 ${assembly.contextsRemoved || 0} 条 · 剩余 ${assembly.contextCount || 0} 条`)),
-                    h("div", { className: "pl-diagnostic-row" }, h("span", null, "本次身份句处理"), h("span", null, `命中 ${assembly.identityBroken || 0} 处（零命中不代表开关关闭）`))) : null)))) : null)),
-        h("footer", { className: "pl-foot" }, h("span", null, "本地配置 · " + (activeProfile?.name || "正在连接")), h("span", null, "v" + (data?.version || "0.5.3") + (data ? " · 更新于 " + timeText(data.generatedAt) : ""))));
+                      ({ off: "原样保留", strip: "整组移除", redact: "隐藏具体值" }[assembly.contextFilter] || "未知") + ` · 去除 ${assembly.contextsRemoved || 0} 条 · 剩余 ${assembly.contextCount || 0} 条`)),
+                    h("div", { className: "pl-diagnostic-row" }, h("span", null, "本次身份句处理"), h("span", null, `命中 ${assembly.identityBroken || 0} 个段/条目（零命中不代表开关关闭）`))) : null)))) : null)),
+        h("footer", { className: "pl-foot" }, h("span", null, "本地配置 · " + (activeProfile?.name || "正在连接")), h("span", null, "v" + (data?.version || "0.5.4") + (data ? " · 更新于 " + timeText(data.generatedAt) : ""))));
 
       // 宿主把本组件渲染在 conversation.view 的视图区里（.viewArea 是 flex:1 的纵向容器），
       // 这里只负责填满它：显示 / 隐藏由宿主的页签切换决定，组件自己不判断是否可见。

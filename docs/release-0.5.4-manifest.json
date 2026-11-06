@@ -1,0 +1,68 @@
+{
+  "version": "0.5.4",
+  "releaseDate": "2026-11-07",
+  "timezone": "Asia/Hong_Kong",
+  "sourceTag": "v0.5.4",
+  "baselineTag": "v0.5.3",
+  "baselineCommit": "c397ab8",
+  "package": {
+    "filename": "dsh-prompt-lab-0.5.4.tgz",
+    "bytes": 69033,
+    "files": 18,
+    "sha256": "E123032292D5F87807F426E861BE605EF181C06D05E83B8C3B2C57EE908B6FF4",
+    "loadedFromExtractedArchive": true
+  },
+  "verification": {
+    "nodeTests": {
+      "passed": 63,
+      "skipped": 0,
+      "failed": 0
+    },
+    "syntaxPassed": true,
+    "realChromiumReactDOM": true,
+    "viewportWidths": [
+      1200,
+      520,
+      360
+    ],
+    "detailedSettingsViewportWidths": [
+      1200,
+      360
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "settingsSaveIndependently": true,
+    "failedSettingsSaveRetainsPreviousValue": true,
+    "existingCompatibilityEnabledStatePreserved": true,
+    "compatibilityStatusVisibleWhileCollapsed": true,
+    "realHostVersion": "0.2.2-rc.1",
+    "realSystemPromptAndWebServerPassed": true,
+    "live": {
+      "proof": {
+        "ok": true,
+        "version": "0.5.4",
+        "clientRevision": "b863ead6b0df",
+        "clientSourceMatched": true,
+        "profileCount": 3,
+        "ruleSetCount": 0,
+        "incrementalResponseBytes": 41,
+        "exportPassed": true,
+        "importPreviewPassed": true,
+        "previewDidNotChangeState": true
+      },
+      "userDataFilesUnchanged": true,
+      "configuredPromptUnchanged": true,
+      "settingsUnchanged": true,
+      "backupDirectory": "C:/Users/yyyyyytd/.dsh/backups/prompt-lab-0.5.4-1793984282095",
+      "rollbackPackageVersion": "0.5.3"
+    }
+  },
+  "notes": [
+    "This manifest is outside the npm files allowlist and is not included in the tgz whose hash it records.",
+    "Screenshots contain isolated fixtures only; no live user prompt data.",
+    "The native DSH window was not directly automated; real Chromium React DOM and real DSH modules were verified separately.",
+    "No npm publication or remote git push was performed."
+  ]
+}

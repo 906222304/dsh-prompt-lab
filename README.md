@@ -1,6 +1,6 @@
 # 提示词（dsh-prompt-lab）
 
-> 版本：**0.5.3**；中文名：**提示词**；英文代号 `Prompt Lab`；包名 `dsh-prompt-lab`；页签 id `prompt-lab`。
+> 版本：**0.5.4**；中文名：**提示词**；英文代号 `Prompt Lab`；包名 `dsh-prompt-lab`；页签 id `prompt-lab`。
 
 DSH（DeepSeek Harness）的提示词面板：在**会话页签**里编辑、保存、切换配置，查看已保存预览与最近一次 text() 求值，
 在「设置 → 诊断」中检查本插件注入与过滤结果，并可对轨迹里那段
@@ -12,6 +12,7 @@ DSH（DeepSeek Harness）的提示词面板：在**会话页签**里编辑、保
 0.5.2 参考 [Magpie](https://github.com/yetone/magpie) 的桌面界面设计，使用低对比灰阶、分组卡片、
 配置列表与编辑器分栏。管理操作收进菜单，预览信息按需展开，支持明暗主题和窄屏布局。
 0.5.3 将诊断收进设置，默认折叠；只显示本插件正文段、规则段和过滤结果。完整上下文分析可使用 `dsh-context`。
+0.5.4 将设置统一为“提示词处理”：环境信息选择原样保留 / 隐藏具体值 / 整组移除，渠道身份句兼容收进高级设置。示例、适用场景与生效边界见 [设置详细说明](docs/settings-guide.zh-CN.md)。
 
 ## 组成
 
@@ -55,7 +56,7 @@ DSH（DeepSeek Harness）的提示词面板：在**会话页签**里编辑、保
 导入为追加副本：冲突 id 自动重分配，规则引用同步映射，不自动启用或覆盖。一次导入任一项非法即整体拒绝。
 导入专用端点上限为 34,760,000 字节，按最多 20 套配置、50 套规则与最坏 JSON 转义计算；普通保存仍使用下述较小上限。
 
-### 上下文过滤（去除 / 脱敏轨迹里那段运行时上下文）
+### 环境信息（原上下文过滤）
 
 宿主每轮请求都会把 `assembly.contexts`（工作目录、文件沙箱策略、审批策略、宿主源码路径、
 Web GUI 地址等贡献）渲染成「Current runtime context. This snapshot supersedes earlier
@@ -66,18 +67,17 @@ runtime-context snapshots. …」追加进模型上下文，轨迹（Trajectory�
 | --- | --- | --- |
 | `off`（默认） | 原样返回（同一引用，零改写） | 与未启用时逐字节一致 |
 | `strip` | `contexts` 整组清空：模型与轨迹里都不再出现这段 | 其中含审批提示（工具要不要先问用户）等功能句，全去掉可能让模型更保守 |
-| `redact` | 保留每条贡献的结构与功能句，把路径 / URL / 时间戳换成 `<路径>` / `<URL>` / `<时间>` | 推荐：模型仍知道环境结构与策略，但看不到具体机器信息 |
+| `redact` | 保留每条贡献的结构与功能句，按内置规则把路径 / URL / ISO 时间戳换成 `<路径>` / `<URL>` / `<时间>` | 不是全量隐私清理，不保证识别所有路径或敏感信息 |
 
 只作用于**之后的新请求**；已入库的历史不会回改。轨迹里「Time sampled / Elapsed /
 Browser time zone」那几行来自官方 `@deepseek-ai/dsh-time-context` 插件（注入的是用户消息），
 不在此过滤范围内。
 
-### 渠道指纹脱敏（identityBreak，0.4.4）
+### 渠道身份句兼容（identityBreak；旧名“渠道指纹脱敏”，0.4.4 起）
 
-WorkBuddy 国内网关对 `system`/`assistant` 消息做**大小写不敏感的精确子串匹配**，命中「第三方
-agent 身份句」清单即拒（`400 / code 11128`；报错文案「这次调用没通过渠道校验」是通用托词，
-换账号/换 UA 无效）。DSH 提示词里有三处这样的 span，**三处全处理才有效**（dsh-connect-workbuddy
-#113/#125 的对照实测：只改任意一处不够）：
+项目已有 WorkBuddy 排查记录（dsh-connect-workbuddy #113/#125）显示，`400 / code 11128` 曾与第三方
+agent 身份句的文本匹配有关。本开关按已有匹配清单提供兼容处理；该状态码也可能有其他原因，不保证解决所有渠道拒绝。
+匹配类型包括：
 
 1. `You are a coding agent powered by the <模型名> model.`（首行身份句，模型名可变）
 2. `You are an AI agent powered by DeepSeek Harness.`
@@ -86,7 +86,7 @@ agent 身份句」清单即拒（`400 / code 11128`；报错文案「这次调�
 
 开启后本插件在组装结果（sections + contexts）里对命中 span 的**每个词界插入 U+200B 零宽空格**
 （dsh-connect-workbuddy 5.8.1 `breakIdentityClauses` 的同款做法）：网关子串匹配失配，模型读到
-的每个词不变——真实 28,651 字系统提示词实测只 **+0.08%** 字节，去掉零宽后与原文逐字一致。
+的可见单词保持原样。实际发送的字符串包含额外零宽字符，不保证分词或模型行为完全不受影响。
 
 边界：拦截清单是实测快照，网关加词条时需更新 `lib/redact.js` 的 `IDENTITY_SPANS`；
 只处理系统提示词层，历史消息里复述过这些句子的会话需要换新会话（或在中转层处理）；
@@ -111,7 +111,7 @@ agent 身份句」清单即拒（`400 / code 11128`；报错文案「这次调�
 - 旧格式先在内存兼容，首次写入前保存原始字节到同目录 `backups/profiles-v<旧版本>-*.json`。损坏或未知格式会阻止覆盖；外部进程已改磁盘文件时也会拒绝写入。
 - 配置最多 20 套，规则最多 50 套；每套正文/附加规则和每条共享规则正文均最多 64000 UTF-16 单元。
 - 原有 `profiles[].rules` 仍为配置自己的附加规则，保持 `## 当前规则集` 文本；共享规则按 `ruleIds` 顺序追加在其后，避免重复迁移。
-- 面板设置（上下文过滤模式 + 渠道指纹脱敏开关）保存在 `DSH_HOME/prompt-lab/settings.json`，
+- 面板设置（环境信息处理方式 + 渠道身份句兼容开关）保存在 `DSH_HOME/prompt-lab/settings.json`，
   坏字段回落默认（全关），删掉文件即复位。
 - 未保存草稿只保留在本次页面内存，切走宿主页签后再返回可恢复；切换编辑配置或启用已保存版本时需确认放弃修改。刷新/关闭整个页面会丢失草稿，浏览器支持时会弹出离开确认。
 
@@ -119,7 +119,7 @@ agent 身份句」清单即拒（`400 / code 11128`；报错文案「这次调�
 
 ```powershell
 npm run check              # 运行时、测试与辅助脚本的语法检查
-npm run test               # node --test 跑用例（61 项）
+npm run test               # node --test 跑用例（63 项）
 npm run test:plain         # 直接执行测试文件（沙箱/受限环境下 node --test 可能 EPERM）
 npm run extract:purge-prompt  # 解密 dsh-purge 上游默认提示词到 references/
 npm pack --dry-run --json  # 核对发布清单
@@ -134,7 +134,7 @@ npm run test:rollback      # 需要本地 0.4.9 tgz，使用隔离夹具验证�
 `PROMPT_LAB_BROWSER_DEPS=<该目录/node_modules>` 后运行 `npm run test:browser`；可用
 `PROMPT_LAB_BROWSER` 指定 Chromium/Edge 可执行文件，用 `PROMPT_LAB_BROWSER_ARTIFACTS` 指定截图目录。
 该辅助测试需要 Node 22+ 和已安装浏览器，使用隔离用户目录；插件运行时仍为 Node 18+ 且无第三方依赖。
-当前界面、部署与回滚记录见 [0.5.3 交付记录](docs/release-0.5.3.md)，数据升级说明见 [0.5.1 交付记录](docs/release-0.5.1.md)。
+当前界面、部署与回滚记录见 [0.5.4 交付记录](docs/release-0.5.4.md)，数据升级说明见 [0.5.1 交付记录](docs/release-0.5.1.md)。
 
 ## 排查
 
@@ -148,7 +148,7 @@ npm run test:rollback      # 需要本地 0.4.9 tgz，使用隔离夹具验证�
 | 页签显示但内容不刷新 | 轮询被退避挡住（连续失败会 3s→6s→12s→24s→30s 退避），恢复后自动回到 3s |
 | 轨迹里还看得到运行时上下文 | 过滤只作用于新请求，历史不回改；确认「设置」页签的模式不是「关闭」；若宿主没暴露 `system-prompt/assemble` 则过滤无法生效 |
 | 轨迹里「Time sampled / Elapsed」还在 | 那几行来自官方 `dsh-time-context` 插件（用户消息），不在本过滤范围；需要关掉请走该插件自己的配置 |
-| WorkBuddy 报 400 / 11128「渠道校验」 | 系统提示词命中网关的第三方 agent 身份句清单；在「设置」页签开启**渠道指纹脱敏**后新请求生效；历史消息复述过身份句的旧会话需换新会话 |
+| WorkBuddy 报 400 / 11128「渠道校验」 | 可能涉及已知身份句匹配；在「设置 → 提示词处理 → 高级兼容性」了解**渠道身份句兼容**后按需启用；不保证解决所有同码错误，历史消息不会回改 |
 
 ## 已知边界
 

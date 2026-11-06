@@ -247,7 +247,7 @@ test('diagnostics start collapsed in settings and show only Prompt Lab observati
   assert.equal(h.find(n => n.props['aria-label'] === 'Prompt Lab 诊断'), undefined);
   h.button('设置').props.onClick(); await h.flush();
   assert.equal(h.find(n => n.props['aria-label'] === 'Prompt Lab 诊断').props.open, undefined);
-  for (const value of ['本插件正文', '本插件规则', '去除 3 条', '命中 2 处']) assert.ok(h.allText.includes(value));
+  for (const value of ['本插件正文', '本插件规则', '去除 3 条', '命中 2 个段/条目']) assert.ok(h.allText.includes(value));
   for (const value of ['其他插件正文', '其他上下文原文']) assert.ok(!h.allText.includes(value));
   h.unmount();
 });
@@ -261,4 +261,41 @@ test('diagnostics distinguish missing observations from failed processing', asyn
     assert.ok(!h.allText.includes('本次上下文过滤'));
     h.unmount();
   }
+});
+
+test('environment and channel compatibility settings save independently and retain existing values', async () => {
+  const h = panelHarness(), sample = initial();
+  sample.settings = { contextFilter: 'off', identityBreak: true };
+  await h.start(sample); h.button('设置').props.onClick(); await h.flush();
+  assert.equal(h.find(n => n.props['aria-label'] === '高级兼容性').props.open, undefined);
+  assert.ok(h.allText.includes('渠道身份句兼容 · 已开启'));
+  let revision = 1;
+  for (const mode of ['redact', 'strip', 'off']) {
+    h.find(n => n.props['aria-label'] === '环境信息处理方式').props.onChange({ target: { value: mode } });
+    await h.flush();
+    assert.deepEqual(JSON.parse(h.requests.at(-1).options.body), { action: 'settings.update', contextFilter: mode });
+    assert.equal(h.find(n => n.props['aria-label'] === '渠道身份句兼容').props.disabled, true);
+    const updated = initial(++revision); updated.settings = { contextFilter: mode, identityBreak: true };
+    h.requests.at(-1).respond(updated); await h.flush();
+    assert.equal(h.find(n => n.props['aria-label'] === '渠道身份句兼容').props.checked, true);
+  }
+  h.find(n => n.props['aria-label'] === '渠道身份句兼容').props.onChange({ target: { checked: false } });
+  assert.deepEqual(JSON.parse(h.requests.at(-1).options.body), { action: 'settings.update', identityBreak: false });
+  const updated = initial(++revision); updated.settings = { contextFilter: 'off', identityBreak: false };
+  h.requests.at(-1).respond(updated); await h.flush();
+  assert.equal(h.find(n => n.props['aria-label'] === '环境信息处理方式').props.value, 'off');
+  assert.ok(h.allText.includes('渠道身份句兼容 · 已关闭'));
+  h.unmount();
+});
+
+test('failed settings saves keep the last saved selection and compatibility state', async () => {
+  const h = panelHarness(), sample = initial();
+  sample.settings = { contextFilter: 'redact', identityBreak: true };
+  await h.start(sample); h.button('设置').props.onClick(); await h.flush();
+  h.find(n => n.props['aria-label'] === '环境信息处理方式').props.onChange({ target: { value: 'strip' } });
+  h.requests.at(-1).respond({ error: 'settings write denied' }, false); await h.flush();
+  assert.equal(h.find(n => n.props['aria-label'] === '环境信息处理方式').props.value, 'redact');
+  assert.ok(h.allText.includes('settings write denied'));
+  assert.ok(h.allText.includes('渠道身份句兼容 · 已开启'));
+  h.unmount();
 });

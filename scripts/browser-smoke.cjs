@@ -193,6 +193,33 @@ plugin.apply({effect:fn=>fn(),slots:{inject(name,fn){fn()},register(options,rend
       await click(label);await next();
       const screenshot=await page.call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifactDir,`${pluginVersion}-${file}-light.png`),Buffer.from(screenshot.data,'base64'));
     }
+    assert.equal(await page.evaluate('document.querySelector(".pl-advanced").open'),false,'advanced compatibility collapsed by default');
+    for(const mode of ['redact','strip','off']) {
+      await select('[aria-label="环境信息处理方式"]',mode);
+      await wait(()=>state.snapshot().settings.contextFilter===mode,'environment setting '+mode);await next();
+      assert.equal(state.snapshot().settings.identityBreak,false,'environment does not enable compatibility');
+    }
+    await page.evaluate('document.querySelector(".pl-advanced>summary").click()');await next();
+    await page.evaluate('document.querySelector("[aria-label=渠道身份句兼容]").click()');
+    await wait(()=>state.snapshot().settings.identityBreak===true,'compatibility enabled');await next();
+    assert.equal(state.snapshot().settings.contextFilter,'off');
+    assert.ok((await text()).includes('已开启'));
+    await page.evaluate('document.querySelector(".pl-advanced>summary").click()');await next();
+    assert.ok((await text()).includes('渠道身份句兼容 · 已开启'),'enabled state visible when advanced is closed');
+    await page.evaluate('document.querySelector(".pl-advanced>summary").click()');await next();
+    await page.evaluate('document.querySelector("[aria-label=渠道身份句兼容]").click()');
+    await wait(()=>state.snapshot().settings.identityBreak===false,'compatibility disabled');await next();
+    await page.evaluate('document.querySelector(".pl-inline-help>summary").click()');await next();
+    for(const theme of ['light','dark']) for(const width of [1200,360]) {
+      await page.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:theme}]});
+      await page.call('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});await next();
+      for(const [file,selector] of [['settings-details','.pl-processing-head'],['compatibility','.pl-advanced']]) {
+        await page.evaluate(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'start'})`);await next();
+        assert.equal(await page.evaluate('document.querySelector(".pl-body").scrollWidth<=document.querySelector(".pl-body").clientWidth'),true,'settings details no horizontal overflow');
+        const screenshot=await page.call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifactDir,`${pluginVersion}-${file}-${theme}-${width}.png`),Buffer.from(screenshot.data,'base64'));
+      }
+    }
+    await page.evaluate('document.querySelector(".pl-advanced>summary").click();document.querySelector(".pl-inline-help>summary").click()');await next();
     assert.equal(await page.evaluate('document.querySelector(".pl-diagnostics").open'),false,'diagnostics collapsed by default');
     assert.equal((await text()).includes('prompt-lab:custom'),false,'diagnostic body hidden');
     await page.evaluate('document.querySelector(".pl-diagnostics>summary").click()');await next();
@@ -210,7 +237,7 @@ plugin.apply({effect:fn=>fn(),slots:{inject(name,fn){fn()},register(options,rend
     await click('提示词与规则');await next();await click('设置');await next();
     assert.equal(await page.evaluate('document.querySelector(".pl-diagnostics").open'),false,'diagnostics collapsed on reentry');
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({ok:true,version:pluginVersion,renderer:'Chromium + React 18 DOM',checks:['profile create/save/activate/copy/rename/delete with fallback','rule CRUD/disable/referenced delete protection','ordered references','legacy plus shared sections','409 draft protection','real JSON download and file import preview/commit','profile and rule draft remount recovery','1200/520/360px light and dark layouts','four management pages rendered','collapsed diagnostics and own-section inspection','1200/360px light and dark diagnostics'],artifacts:artifactDir}));
+    console.log(JSON.stringify({ok:true,version:pluginVersion,renderer:'Chromium + React 18 DOM',checks:['profile create/save/activate/copy/rename/delete with fallback','rule CRUD/disable/referenced delete protection','ordered references','legacy plus shared sections','409 draft protection','real JSON download and file import preview/commit','profile and rule draft remount recovery','1200/520/360px light and dark layouts','four management pages rendered','independent environment and compatibility settings','enabled compatibility status visible while collapsed','1200/360px light and dark detailed settings','collapsed diagnostics and own-section inspection','1200/360px light and dark diagnostics'],artifacts:artifactDir}));
   } catch(error) {
     if(page){try{console.error('UI at failure: '+await page.evaluate('document.body.innerText'));}catch{}}
     throw error;
