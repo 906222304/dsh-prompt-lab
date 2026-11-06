@@ -40,6 +40,9 @@ function writeProfiles(profiles, selected) {
 const profile = (id = 'custom', prompt = '正文') => ({ id, name: id, prompt, rules: '' });
 
 async function request(data, raw) {
+  if (data?.action === 'save' && data.expectedVersion === undefined) {
+    data = { ...data, expectedVersion: snapshot().profiles.find(p => p.id === data.id)?.version };
+  }
   const body = raw ?? JSON.stringify(data);
   const bytes = Buffer.from(body);
   const chunks = [];
@@ -195,7 +198,7 @@ test('maximum Chinese, emoji and escaped control text fits the HTTP budget', asy
     assert.equal(res.status, 200);
     assert.equal(res.body.profiles[0].prompt, text);
   }
-  const escaped = JSON.stringify({ action: 'save', id: 'default', prompt: '中'.repeat(64000), rules: '中'.repeat(64000) }).replace(/中/g, '\\u4e2d');
+  const escaped = JSON.stringify({ action: 'save', id: 'default', expectedVersion: snapshot().profiles[0].version, prompt: '中'.repeat(64000), rules: '中'.repeat(64000) }).replace(/中/g, '\\u4e2d');
   assert.equal((await request(null, escaped)).status, 200);
 });
 

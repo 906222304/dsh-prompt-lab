@@ -1,0 +1,43 @@
+{
+  "version": "0.5.1",
+  "releaseDate": "2026-11-07",
+  "timezone": "Asia/Hong_Kong",
+  "sourceTag": "v0.5.1",
+  "baselineTag": "v0.4.9",
+  "baselineCommit": "df4bcea",
+  "package": {
+    "filename": "dsh-prompt-lab-0.5.1.tgz",
+    "bytes": 56787,
+    "files": 14,
+    "sha256": "3145CC621E8D32A8F68C5D606B45DEA2E31DA59CF83F1BAA227CDA869CD57DC9",
+    "loadedFromExtractedArchive": true
+  },
+  "verification": {
+    "nodeTests": { "passed": 58, "failed": 0, "skipped": 0 },
+    "plainTestEntryPassed": true,
+    "syntaxPassed": true,
+    "realChromiumReactDOM": true,
+    "viewportWidths": [1200, 520, 360],
+    "realHostVersion": "0.2.2-rc.1",
+    "realSystemPromptAndWebServerPassed": true,
+    "restoreWithActual049PackagePassed": true,
+    "live": {
+      "version": "0.5.1",
+      "clientRevision": "d3c320fa757f",
+      "clientSourceMatched": true,
+      "profileCount": 3,
+      "ruleSetCount": 0,
+      "incrementalResponseBytes": 41,
+      "exportPassed": true,
+      "importPreviewPassed": true,
+      "userDataFilesUnchanged": true,
+      "configuredPromptUnchanged": true,
+      "backupDirectory": "C:/Users/yyyyyytd/.dsh/backups/prompt-lab-0.5.1-1793980655126"
+    }
+  },
+  "notes": [
+    "This manifest is outside the npm files allowlist and is not included in the tgz whose hash it records.",
+    "The live native window was not directly automated; real Chromium React DOM and real DSH modules were verified separately.",
+    "No npm publication or remote git push was performed."
+  ]
+}

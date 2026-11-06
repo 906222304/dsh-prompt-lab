@@ -29,7 +29,8 @@ const callbacks = {};
 const effects = [];
 // 最小可用的宿主上下文替身。
 const ctx = {
-  systemPrompt: { section: (data) => { callbacks.section = data; return () => {}; } },
+  systemPrompt: { section: (data) => { callbacks[data.name] = data;
+    if (data.name === 'prompt-lab:custom') callbacks.section = data; return () => {}; } },
   on: (name, callback) => { callbacks[name] = callback; return () => {}; },
   effect: (callback) => effects.push(callback),
 };
@@ -50,7 +51,9 @@ test('save and activate rule set, dynamic callback uses current profile', () => 
   updateProfile({ action: 'save', id: 'direct', prompt: '身份标记 ABC', rules: '先列出验证条件。' });
   updateProfile({ action: 'activate', id: 'direct' });
   // 切换配置后，同一个 text() 回调应返回新配置的拼装结果。
-  assert.equal(callbacks.section.text(), '身份标记 ABC\n\n## 当前规则集\n先列出验证条件。');
+  assert.equal(callbacks.section.text(), '身份标记 ABC');
+  assert.equal(callbacks['prompt-lab:rules'].text(), '## 当前规则集\n先列出验证条件。');
+  assert.equal(snapshot().effectivePrompt, '身份标记 ABC\n\n## 当前规则集\n先列出验证条件。');
   assert.equal(snapshot().selected, 'direct');
   assert(fs.existsSync(path.join(dir, 'prompt-lab', 'profiles.json')));
 });
@@ -307,7 +310,7 @@ test('HTTP GET exposes actual prompt and assembly; POST edits profile', async ()
   assert.equal(before.status, 200);
   assert(before.body.effectivePrompt.length > 0);
   assert(before.body.assembly.sections.length === 2);
-  const after = await dispatch('POST', { action: 'save', id: 'default', prompt: '新内容', rules: '约束A' });
+  const after = await dispatch('POST', { action: 'save', id: 'default', expectedVersion: snapshot().profiles.find(p => p.id === 'default').version, prompt: '新内容', rules: '约束A' });
   assert.equal(after.status, 200);
   assert.equal(after.body.profiles.find(p => p.id === 'default').prompt, '新内容');
 });
@@ -464,7 +467,7 @@ test('frontend registers the conversation View tab with its options', () => {
   // 三个内部页签：提示词与规则 / 组装快照 / 设置。
   assert.deepEqual(
     collect(tree, (n) => hasClass(n, 'pl-tab')).map((n) => n.children[0]),
-    ['提示词与规则', '组装快照', '设置'],
+    ['提示词与规则', '规则库', '导入导出', '组装快照', '设置'],
   );
   // 日志行结构与「自动刷新」勾选框都不应再出现在树里。
   assert.equal(collect(tree, (n) => hasClass(n, 'pl-row')).length, 0);

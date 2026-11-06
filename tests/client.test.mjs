@@ -141,7 +141,7 @@ test('activating an edited inactive profile confirms discarding and sends no dra
   h.confirmResult = true;
   h.button('启用这套配置').props.onClick(); await h.flush();
   const post = h.requests.at(-1);
-  assert.deepEqual(JSON.parse(post.options.body), { action: 'activate', id: 'other' });
+  assert.deepEqual(JSON.parse(post.options.body), { action: 'activate', id: 'other', expectedVersion: 1 });
   assert.equal(h.textarea().props.disabled, true);
   post.respond({ ...initial(2), selected: 'other' }); await h.flush();
   assert.equal(h.textarea().props.value, '其他已保存');

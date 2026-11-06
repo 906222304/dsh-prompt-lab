@@ -38,13 +38,13 @@ window.__ModuleLoader__.load({
 /* ── 通用控件：按钮（.accent 用品牌色，:disabled 降透明度）与面板内页签 ── */
 .pl-btn{color:inherit;background:var(--dsw-alias-bg-layer-2,#333);border:1px solid var(--dsw-alias-border-l1,#555);border-radius:7px;padding:6px 11px;font:inherit;cursor:pointer}.pl-btn:disabled{opacity:.45;cursor:default}
 .pl-btn.accent{border-color:var(--dsw-alias-brand-primary,#5ca981)}.pl-tabs{display:flex;gap:6px;padding:9px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,#444)}
-.pl-tab{border:0;border-radius:6px;color:inherit;background:transparent;padding:7px 12px;cursor:pointer;font:inherit}.pl-tab.current{background:var(--dsw-alias-bg-layer-2,#444);font-weight:700}
+.pl-tab{border:0;border-radius:6px;color:inherit;background:transparent;padding:7px 12px;cursor:pointer;font:inherit}.pl-tab.current{background:var(--dsw-alias-bg-layer-2,#444);font-weight:700}.pl-tabs{flex-wrap:wrap}
 /* ── 概览卡片：三列网格（插件状态 / 当前规则集 / 组装快照），窄屏改两列见文件末尾 ── */
 .pl-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 14px 0}.pl-card{border-radius:9px;background:var(--dsw-alias-bg-layer-2,#333);border:1px solid var(--dsw-alias-border-l1,#444);padding:10px}.pl-card .label{color:var(--dsw-alias-label-secondary,#aaa);font-size:11px}.pl-card .value{font-weight:650;margin-top:5px;overflow-wrap:anywhere}
 /* ── 正文：面板唯一的滚动区（flex:1 + overflow:auto）；.pl-warning 用于「本机可见 / 不等于模型已接收」这类提醒 ── */
 .pl-body{padding:12px 14px 18px;overflow:auto;flex:1;min-height:0}.pl-warning{color:#edc481;background:#8a641824;border:1px solid #8a641851;border-radius:8px;padding:9px 11px;margin:0 0 12px;font-size:12px}
 /* ── 排版助手：.pl-inline 是一行内自动换行的控件组（strong 靠左、其余靠右排开），.pl-muted 是次要文案 ── */
-.pl-inline{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:9px}.pl-inline strong{margin-right:auto}.pl-muted{color:var(--dsw-alias-label-secondary,#aaa)}
+.pl-inline{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:9px}.pl-inline>span{min-width:0;overflow-wrap:anywhere}.pl-inline strong{margin-right:auto}.pl-muted{color:var(--dsw-alias-label-secondary,#aaa)}
 /* ── 表单：配置选择框与两个文本域；文本域用等宽字体，方便核对提示词里的空格与换行 ── */
 .pl-select,.pl-textarea{background:var(--dsw-alias-bg-layer-2,#333);border:1px solid var(--dsw-alias-border-l1,#555);border-radius:8px;color:inherit;font:inherit;max-width:100%}.pl-select{padding:7px 10px}.pl-textarea{width:100%;min-height:180px;line-height:1.65;font-family:ui-monospace,Consolas,monospace;resize:vertical;padding:10px}.pl-textarea.rules{min-height:100px}.pl-field{display:block;font-weight:600;margin:12px 0 6px}
 /* ── 代码块与折叠块：提示词全文、组装段正文、编辑器预览都用它；长文本换行而不是横向滚动 ── */
@@ -63,10 +63,10 @@ window.__ModuleLoader__.load({
      * @param {number} [since] GET 时已知的状态版本号；与服务端一致就只回 { unchanged: true }。
      * @returns {Promise<object>} 服务端返回的快照对象。
      */
-    async function api(method = "GET", payload, since = 0) {
+    async function api(method = "GET", payload, since = 0, endpoint = "/prompt-lab/api") {
       // 增量轮询：把已知版本号带在查询串上，状态没变时服务端只回一个几十字节的响应。
       const query = method === "GET" && since > 0 ? `?since=${encodeURIComponent(since)}` : "";
-      const response = await fetch("/prompt-lab/api" + query, {
+      const response = await fetch(endpoint + query, {
         method,
         // 快照必须实时：既声明不缓存，也要求浏览器不要复用上次响应。
         cache: "no-store",
@@ -85,7 +85,7 @@ window.__ModuleLoader__.load({
       });
       const data = await response.json();
       // 服务端约定：只有 ok === true 才算成功，否则把 error 文案抛给调用方展示。
-      if (!response.ok || data?.ok !== true) throw new Error(data?.error || `HTTP ${response.status}`);
+      if (!response.ok || data?.ok !== true) throw Object.assign(new Error(data?.error || `HTTP ${response.status}`), { statusCode: response.status });
       return data;
     }
     /**
@@ -126,6 +126,140 @@ window.__ModuleLoader__.load({
       type: "button", className: "pl-btn " + cls, onClick, disabled,
     }, label);
 
+    async function downloadBundle(kind = "all", id = "") {
+      const result = await api("GET", undefined, 0,
+        `/prompt-lab/api/export?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(id)}`);
+      const url = URL.createObjectURL(new Blob([JSON.stringify(result.bundle, null, 2)], { type: "application/json" }));
+      const anchor = document.createElement("a");
+      anchor.href = url; anchor.download = `prompt-lab-${kind}-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(anchor); anchor.click(); anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    let retainedRuleDraft = null;
+    function RuleManager({ data, onCommitted }) {
+      const empty = () => ({ id: "", name: "", text: "", enabled: true });
+      const [draft, setDraft] = useState(() => retainedRuleDraft?.draft || empty());
+      const saved = useRef(retainedRuleDraft?.saved || empty());
+      const [busy, setBusy] = useState(false);
+      const [error, setError] = useState("");
+      const working = useRef(false);
+      const mounted = useRef(false);
+      const current = useRef(draft); current.current = draft;
+      const dirty = () => JSON.stringify(current.current) !== JSON.stringify(saved.current);
+      const change = (field, value) => {
+        const next = { ...draft, [field]: value };
+        current.current = next; setDraft(next);
+        retainedRuleDraft = JSON.stringify(next) !== JSON.stringify(saved.current) ? { draft: next, saved: saved.current } : null;
+      };
+      const load = item => { const next = item ? { id: item.id, name: item.name, text: item.text, enabled: item.enabled, version: item.version } : empty();
+        current.current = next; saved.current = next; retainedRuleDraft = null; setDraft(next); };
+      const choose = item => { if (!dirty() || window.confirm("放弃规则草稿并切换？")) load(item); };
+      useEffect(() => {
+        mounted.current = true;
+        const beforeUnload = event => { if (dirty()) { event.preventDefault(); event.returnValue = ""; } };
+        window.addEventListener("beforeunload", beforeUnload);
+        return () => { mounted.current = false; window.removeEventListener("beforeunload", beforeUnload); };
+      }, []);
+      async function mutate(action) {
+        if (working.current) return;
+        if (action === "delete" && !window.confirm(`删除规则“${draft.name}”？`)) return;
+        if (action === "duplicate" && dirty() && !window.confirm("复制使用已保存版本，是否放弃当前规则草稿？")) return;
+        working.current = true; setBusy(true); setError("");
+        try {
+          const result = await api("POST", { action: `rule.${action}`, id: draft.id,
+            name: action === "duplicate" ? undefined : draft.name, text: draft.text, enabled: draft.enabled,
+            expectedVersion: draft.version, confirm: action === "delete" });
+          onCommitted(result);
+          if (mounted.current) load(result.ruleSets.find(item => item.id === (result.editedRuleId || draft.id)));
+        } catch (failure) {
+          if (mounted.current) setError(failure.message);
+          if (failure.statusCode === 409 || failure.statusCode === 428) {
+            try { onCommitted(await api()); } catch { /* 保留冲突和草稿 */ }
+          }
+        }
+        finally { working.current = false; if (mounted.current) setBusy(false); }
+      }
+      const selectedRule = data.ruleSets.find(item => item.id === draft.id);
+      return h("section", { "aria-label": "共享规则库" },
+        h("p", { className: "pl-muted" }, "规则可被多个配置引用；启用状态对所有引用生效。修改保存后在下一次组装中使用。"),
+        error ? h("p", { className: "pl-error" }, error) : null,
+        h("div", { className: "pl-inline" },
+          h("select", { className: "pl-select", "aria-label": "选择共享规则", value: draft.id, disabled: busy,
+            onChange: e => choose(data.ruleSets.find(item => item.id === e.target.value)) },
+            h("option", { value: "" }, "新建规则草稿"),
+            ...data.ruleSets.map(item => h("option", { key: item.id, value: item.id }, item.name))),
+          btn("新建规则", () => choose(null), "", busy),
+          btn("载入最新规则", () => choose(selectedRule), "", busy || !draft.id),
+          btn("复制规则", () => mutate("duplicate"), "", busy || !draft.id),
+          btn("删除规则", () => mutate("delete"), "", busy || !draft.id || !!selectedRule?.usedBy?.length),
+          btn("导出规则", () => downloadBundle("rule", draft.id).catch(e => setError(e.message)), "", busy || !draft.id)),
+        h("label", { className: "pl-field" }, "规则名称"),
+        h("input", { className: "pl-select", "aria-label": "规则名称", maxLength: 80, value: draft.name, disabled: busy, onChange: e => change("name", e.target.value) }),
+        h("label", { className: "pl-field" }, "规则正文"),
+        h("textarea", { className: "pl-textarea", "aria-label": "规则正文", value: draft.text, disabled: busy, onChange: e => change("text", e.target.value) }),
+        h("label", { className: "pl-inline" }, h("input", { type: "checkbox", checked: draft.enabled, disabled: busy, onChange: e => change("enabled", e.target.checked) }), "启用此共享规则"),
+        h("p", { className: "pl-muted" }, selectedRule?.usedBy?.length
+          ? "引用此规则的配置：" + selectedRule.usedBy.map(item => item.name).join("、") + "。删除前须解除全部引用。" : "暂无配置引用"),
+        h("p", { className: "pl-muted" }, dirty() ? "有未保存规则草稿；切换页签后仍保留在本次页面内存。" : "规则草稿与载入版本一致"),
+        btn("保存规则", () => mutate(draft.id ? "save" : "create"), "accent", busy || !draft.name.trim() || !draft.text.trim()));
+    }
+
+    function TransferPanel({ data, onCommitted }) {
+      const [pending, setPending] = useState(null);
+      const [busy, setBusy] = useState(false);
+      const [error, setError] = useState("");
+      const sequence = useRef(0);
+      const committing = useRef(false);
+      useEffect(() => () => { sequence.current += 1; }, []);
+      async function preview(bundle, request = ++sequence.current) {
+        setBusy(true); setError("");
+        try {
+          const result = await api("POST", { action: "preview", bundle }, 0, "/prompt-lab/api/import");
+          if (request === sequence.current) setPending({ bundle, preview: result.preview });
+        } catch (failure) { if (request === sequence.current) { setPending(null); setError(failure.message); } }
+        finally { if (request === sequence.current) setBusy(false); }
+      }
+      async function selectFile(event) {
+        const file = event.target.files?.[0]; event.target.value = "";
+        if (!file) return;
+        const request = ++sequence.current;
+        setPending(null); setError("");
+        if (file.size > (data.limits?.importBytes || 34760000)) { setError("导入文件超过大小上限"); return; }
+        setBusy(true);
+        try {
+          const bundle = JSON.parse(await file.text());
+          if (request === sequence.current) await preview(bundle, request);
+        } catch (failure) { if (request === sequence.current) { setError(`无法读取 JSON：${failure.message}`); setBusy(false); } }
+      }
+      async function commit() {
+        if (!pending || busy || committing.current) return;
+        committing.current = true;
+        const request = ++sequence.current; setBusy(true); setError("");
+        try {
+          const result = await api("POST", { action: "commit", bundle: pending.bundle,
+            expectedStoreVersion: pending.preview.storeVersion }, 0, "/prompt-lab/api/import");
+          onCommitted(result);
+          if (request === sequence.current) setPending(null);
+        } catch (failure) { if (request === sequence.current) setError(failure.message); }
+        finally { committing.current = false; if (request === sequence.current) setBusy(false); }
+      }
+      return h("section", { "aria-label": "配置与规则导入导出" },
+        h("p", { className: "pl-warning" }, "导出文件包含已保存的提示词和规则正文，请妥善保管。导入会追加副本，不自动启用，不覆盖已有配置。"),
+        btn("导出全部配置与规则", () => downloadBundle().catch(e => setError(e.message)), "", busy),
+        h("label", { className: "pl-field" }, "选择配置或规则 JSON 文件"),
+        h("input", { type: "file", accept: ".json,application/json", disabled: busy, onChange: selectFile }),
+        error ? h("p", { className: "pl-error" }, error) : null,
+        pending ? h("div", null,
+          h("h3", null, "导入预览"),
+          h("p", null, `${pending.preview.profiles.length} 套配置、${pending.preview.ruleSets.length} 套共享规则`),
+          ...pending.preview.profiles.map(item => h("p", { key: "p"+item.id }, "配置：" + item.name + (item.renamedId ? "（id 冲突，将分配新 id）" : ""))),
+          ...pending.preview.ruleSets.map(item => h("p", { key: "r"+item.id }, "规则：" + item.name + (item.renamedId ? "（id 冲突，将分配新 id）" : ""))),
+          btn("确认追加导入", commit, "accent", busy),
+          btn("重新预览", () => preview(pending.bundle), "", busy),
+          btn("取消导入", () => setPending(null), "", busy)) : null);
+    }
+
     /**
      * 会话页签里的主面板：提示词与规则、组装快照、设置三个页签。
      *
@@ -156,16 +290,26 @@ window.__ModuleLoader__.load({
       const [draft, setDraft] = useState(() => retainedDraft?.prompt || "");
       // 编辑器里的规则草稿（同样是本地草稿）。
       const [ruleDraft, setRuleDraft] = useState(() => retainedDraft?.rules || "");
+      const [nameInput, setNameInput] = useState("");
+      const [, setEditorTick] = useState(0);
       const editor = useRef(retainedDraft ? { ...retainedDraft } : {
-        id: "", prompt: "", rules: "", savedPrompt: "", savedRules: "",
+        id: "", prompt: "", rules: "", savedPrompt: "", savedRules: "", version: 1,
+        ruleIds: [], savedRuleIds: [], promptEnabled: true, savedPromptEnabled: true,
+        rulesEnabled: true, savedRulesEnabled: true,
       });
       const lifecycle = useRef({ mounted: false, epoch: 0, mutating: false });
       const isDirty = () => editor.current.prompt !== editor.current.savedPrompt
-        || editor.current.rules !== editor.current.savedRules;
+        || editor.current.rules !== editor.current.savedRules
+        || JSON.stringify(editor.current.ruleIds) !== JSON.stringify(editor.current.savedRuleIds)
+        || editor.current.promptEnabled !== editor.current.savedPromptEnabled
+        || editor.current.rulesEnabled !== editor.current.savedRulesEnabled;
 
       function loadEditor(profile) {
         editor.current = { id: profile.id, prompt: profile.prompt, rules: profile.rules,
-          savedPrompt: profile.prompt, savedRules: profile.rules };
+          savedPrompt: profile.prompt, savedRules: profile.rules, version: profile.version ?? 1,
+          ruleIds: [...(profile.ruleIds || [])], savedRuleIds: [...(profile.ruleIds || [])],
+          promptEnabled: profile.promptEnabled !== false, savedPromptEnabled: profile.promptEnabled !== false,
+          rulesEnabled: profile.rulesEnabled !== false, savedRulesEnabled: profile.rulesEnabled !== false };
         retainedDraft = null;
         setEditId(profile.id); setDraft(profile.prompt); setRuleDraft(profile.rules);
       }
@@ -173,7 +317,8 @@ window.__ModuleLoader__.load({
       function edit(field, value) {
         editor.current = { ...editor.current, [field]: value };
         retainedDraft = isDirty() ? { ...editor.current } : null;
-        if (field === "prompt") setDraft(value); else setRuleDraft(value);
+        if (field === "prompt") setDraft(value); else if (field === "rules") setRuleDraft(value);
+        else setEditorTick(value => value + 1);
       }
 
       // —— 轮询用的可变状态：放 ref 里，只影响「发不发请求」，不应触发重渲染 ——
@@ -265,6 +410,8 @@ window.__ModuleLoader__.load({
         if (lifecycle.current.mutating) return;
         if (action === "activate" && isDirty()
             && !window.confirm("放弃未保存的修改，并启用这套配置已保存的版本？")) return;
+        if (["create", "duplicate", "rename", "delete"].includes(action) && isDirty()
+            && !window.confirm("此操作使用已保存版本，是否放弃当前未保存修改？")) return;
         const submitted = { ...editor.current };
         lifecycle.current.mutating = true;
         lifecycle.current.epoch += 1;
@@ -272,22 +419,52 @@ window.__ModuleLoader__.load({
         try {
           const result = await api("POST", {
             action,
-            ...(action === "settings.update" ? extra : { id: submitted.id, ...extra }),
-            ...(action === "save" ? { prompt: submitted.prompt, rules: submitted.rules } : {}),
+            ...(action === "settings.update" ? extra : { id: submitted.id, expectedVersion: submitted.version, ...extra }),
+            ...(action === "save" ? { prompt: submitted.prompt, rules: submitted.rules,
+              ruleIds: submitted.ruleIds, promptEnabled: submitted.promptEnabled, rulesEnabled: submitted.rulesEnabled } : {}),
           });
           if (!lifecycle.current.mounted) return;
           revision.current = Number(result.revision) || 0;
           setData(result);
           setError("");
-          if (action === "activate" || action === "save") {
-            const p = result.profiles?.find((x) => x.id === submitted.id);
+          if (["activate", "save", "create", "duplicate", "rename", "delete"].includes(action)) {
+            const target = result.editedId || (action === "delete" ? result.selected : submitted.id);
+            const p = result.profiles?.find((x) => x.id === target);
             if (p) loadEditor(p);
+            setNameInput("");
           }
-        } catch (err) { if (lifecycle.current.mounted) setError(String(err?.message || err)); }
+        } catch (err) {
+          if (lifecycle.current.mounted) {
+            setError(String(err?.message || err));
+            if (err.statusCode === 409 || err.statusCode === 428) {
+              try {
+                const latest = await api();
+                if (lifecycle.current.mounted) { revision.current = latest.revision; setData(latest); }
+              } catch { /* 保留原始冲突提示和草稿 */ }
+            }
+          }
+        }
         finally {
           lifecycle.current.mutating = false;
           if (lifecycle.current.mounted) setSaving(false);
         }
+      }
+      function acceptData(result) {
+        if (!lifecycle.current.mounted) return;
+        lifecycle.current.epoch += 1; revision.current = result.revision; setData(result);
+      }
+      function reloadEditor() {
+        if (isDirty() && !window.confirm("放弃草稿并载入最新保存版本？")) return;
+        const current = data?.profiles?.find(p => p.id === editor.current.id)
+          || data?.profiles?.find(p => p.id === data.selected);
+        if (current) { loadEditor(current); setError(""); }
+      }
+      function deleteProfile() {
+        const target = data?.profiles?.find(p => p.id === editId);
+        const fallback = data?.profiles?.find(p => p.id !== editId);
+        if (!target || !fallback) return;
+        if (!window.confirm(`删除配置“${target.name}”？${selected === editId ? `将回退到“${fallback.name}”。` : ""}`)) return;
+        mutate("delete", { confirm: true, fallbackId: fallback.id });
       }
       // 派生数据：全部取自最近一次快照，缺数据时用空值兜底，保证首帧渲染不报错。
       const selected = data?.selected || "";                  // 当前启用的配置 id
@@ -300,8 +477,10 @@ window.__ModuleLoader__.load({
       const identityOn = data?.settings?.identityBreak === true;
       // 编辑器预览文本：与宿主端 lib/state.js 的 profileText() 拼装规则保持一致
       // （正文 + 可选的「## 当前规则集」段），因此预览看到的就是下一次注入会用的文本。
-      const profileText = draft.trim()
-        ? [draft.trim(), ruleDraft.trim() && `## 当前规则集\n${ruleDraft.trim()}`].filter(Boolean).join("\n\n") : "";
+      const sharedRules = (editor.current.ruleIds || []).map(id => data?.ruleSets?.find(r => r.id === id))
+        .filter(r => r?.enabled).map(r => `## ${r.name}\n${r.text.trim()}`);
+      const profileText = [editor.current.promptEnabled && draft.trim(),
+        editor.current.rulesEnabled && [ruleDraft.trim() && `## 当前规则集\n${ruleDraft.trim()}`, ...sharedRules].filter(Boolean).join("\n\n")].filter(Boolean).join("\n\n");
 
       // 面板骨架：头部 + 页签 + 概览卡片 + 正文（唯一滚动区）+ 页脚。
       // 这里先拼成一个 Fragment，返回时再交给宿主的视图区容器。
@@ -313,7 +492,7 @@ window.__ModuleLoader__.load({
            h("div", { className: "pl-inline", style: { margin: 0 } }, btn("↻", () => refresh(true), "", saving))),
         // 面板内页签（三选一）。切换时顺带把组装快照的「展开全文」复位，避免串页残留。
         h("nav", { className: "pl-tabs" },
-          ...[["profile", "提示词与规则"], ["assembly", "组装快照"], ["settings", "设置"]].map(([k, title]) =>
+          ...[["profile", "提示词与规则"], ["rules", "规则库"], ["transfer", "导入导出"], ["assembly", "组装快照"], ["settings", "设置"]].map(([k, title]) =>
             h("button", { key: k, type: "button", className: "pl-tab" + (tab === k ? " current" : ""), onClick: () => { setTab(k); setShowText(false); } }, title))),
           // 概览卡片：插件状态 / 当前配置 / 组装快照段数。
           h("div", { className: "pl-cards" },
@@ -324,10 +503,18 @@ window.__ModuleLoader__.load({
           h("div", { className: "pl-body" },
             error ? h("div", { className: "pl-error" }, "请求失败：" + error) : null,
             !data ? h("div", { className: "pl-muted" }, "正在加载本地接口…") : null,
+            data?.storage?.error ? h("p", { className: "pl-error" }, data.storage.error) : null,
             data && !st.observerRegistered ? h("p", { className: "pl-warning" }, "组装观察与过滤未就绪：请确认 prompt-lab 插件行已启用，且宿主暴露了组装事件。") : null,
             // —— 页签一：提示词与规则编辑 ——
             tab === "profile" && data ? h(React.Fragment, null,
               h("p", { className: "pl-warning" }, "参考 dsh-purge 的配置优先级与规则集管理；这里的规则是追加到提示词的普通文本，不会修改 DSH 的 AGENTS.md、CLAUDE.md 或宿主代码。"),
+              h("div", { className: "pl-inline" },
+                h("input", { className: "pl-select", value: nameInput, placeholder: "新建、复制或重命名时使用的名称", "aria-label": "配置名称", disabled: saving, maxLength: 80, onChange: e => setNameInput(e.target.value) }),
+                btn("新建配置", () => mutate("create", { name: nameInput }), "", saving || !nameInput.trim()),
+                btn("复制已保存配置", () => mutate("duplicate", nameInput.trim() ? { name: nameInput } : {}), "", saving || !editId),
+                btn("重命名", () => mutate("rename", { name: nameInput }), "", saving || !nameInput.trim()),
+                btn("删除配置", deleteProfile, "", saving || data.profiles.length <= 1),
+                btn("导出此配置", () => downloadBundle("profile", editId).catch(e => setError(e.message)), "", saving || !editId)),
               // ① 选择要编辑的配置；右侧标记它是否就是当前启用项。
               h("div", { className: "pl-inline" },
                 h("strong", null, "选择编辑的配置"),
@@ -336,15 +523,29 @@ window.__ModuleLoader__.load({
                 h("span", { className: "pl-muted" }, selected === editId ? "● 当前启用" : "未启用")),
               // ② 两个文本域就是这份配置的全部内容：系统提示词正文 + 追加规则。
               h("label", { className: "pl-field" }, "系统提示词正文"),
+              h("label", { className: "pl-inline" }, h("input", { type: "checkbox", checked: editor.current.promptEnabled,
+                disabled: saving, onChange: e => edit("promptEnabled", e.target.checked) }), "启用正文段"),
               h("textarea", { className: "pl-textarea", value: draft, disabled: saving, spellCheck: false, onChange: (e) => edit("prompt", e.target.value) }),
               h("label", { className: "pl-field" }, "附加规则（自然语言，每行一条）"),
               h("textarea", { className: "pl-textarea rules", value: ruleDraft, disabled: saving, spellCheck: false, onChange: (e) => edit("rules", e.target.value) }),
+              h("label", { className: "pl-inline" }, h("input", { type: "checkbox", checked: editor.current.rulesEnabled,
+                disabled: saving, onChange: e => edit("rulesEnabled", e.target.checked) }), "启用规则段（附加规则和共享规则）"),
+              h("strong", null, "引用共享规则（按以下顺序注入）"),
+              ...(editor.current.ruleIds || []).map((id, index, ids) => h("div", { className: "pl-inline", key: id },
+                h("span", null, `${index + 1}. ${data.ruleSets?.find(r => r.id === id)?.name || "规则已被删除，请移除引用"}`),
+                btn("↑", () => { const next = [...ids]; [next[index-1],next[index]]=[next[index],next[index-1]]; edit("ruleIds", next); }, "", saving || index === 0),
+                btn("↓", () => { const next = [...ids]; [next[index+1],next[index]]=[next[index],next[index+1]]; edit("ruleIds", next); }, "", saving || index === ids.length-1),
+                btn("移除引用", () => edit("ruleIds", ids.filter(value => value !== id)), "", saving))),
+              ...(data.ruleSets || []).filter(r => !(editor.current.ruleIds || []).includes(r.id)).map(r => h("div", { className: "pl-inline", key: r.id },
+                h("span", null, r.name + (r.enabled ? "" : "（已停用）")),
+                btn("添加引用", () => edit("ruleIds", [...(editor.current.ruleIds || []), r.id]), "", saving))),
               // ③ 保存 / 启用；两个动作都只影响下一次 text() 求值，不改变已发出的请求。
               h("div", { className: "pl-inline", style: { marginTop: 12 } },
                 // 正文为空或正在保存时禁止提交。
-                btn("保存配置", () => mutate("save"), "accent", saving || !draft.trim()),
+                btn("保存配置", () => mutate("save"), "accent", saving || (editor.current.promptEnabled && !draft.trim())),
                 // 已是当前启用项时无需重复启用。
                 btn("启用这套配置", () => mutate("activate"), "", saving || selected === editId),
+                btn("载入最新版本", reloadEditor, "", saving),
                 h("span", { className: "pl-muted" }, "保存后下次 text() 求值使用新配置；修改已发请求无效")),
               h("p", { className: "pl-muted" }, isDirty() ? "有未保存修改；切走宿主页签后，草稿会保留在本次页面内存中。" : "草稿与载入版本一致"),
               h("details", { className: "pl-details" },
@@ -354,9 +555,11 @@ window.__ModuleLoader__.load({
                 h("pre", { className: "pl-pre" }, data.configuredPrompt || "（空）")),
               h("details", { className: "pl-details" },
                 h("summary", null, data.evaluation
-                  ? `最近一次 text() 求值 · ${data.evaluation.evaluatedAt} · 版本 ${data.evaluation.configRevision}${data.evaluation.stale ? " · 配置已变化" : ""}`
+                  ? `最近一次 text() 求值 · ${data.evaluation.section || "combined"} · ${data.evaluation.evaluatedAt} · 版本 ${data.evaluation.configRevision}${data.evaluation.stale ? " · 配置已变化" : ""}`
                   : "最近一次 text() 求值：尚未观察到"),
                 h("pre", { className: "pl-pre" }, data.evaluation?.text || "（空或尚未求值；不代表模型已接收）"))) : null,
+            tab === "rules" && data ? h(RuleManager, { data, onCommitted: acceptData }) : null,
+            tab === "transfer" && data ? h(TransferPanel, { data, onCommitted: acceptData }) : null,
             // —— 页签二：组装快照 ——
             tab === "assembly" && data ? h(React.Fragment, null,
               h("p", { className: "pl-warning" }, "这是进程最近一次 system-prompt/assemble 观察快照，可能来自其他会话；事件后仍可能有宿主处理，不等于模型 API 最终请求。"),
