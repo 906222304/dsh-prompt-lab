@@ -12,6 +12,9 @@ async function main() {
   const { Context } = fromHost('@deepseek-ai/cordis');
   const { SystemPrompt } = fromHost('@deepseek-ai/dsh-system-prompt');
   const { WebServer } = fromHost('@deepseek-ai/dsh-host-webserver');
+  const {SessionStore}=fromHost('@deepseek-ai/dsh-session');
+  const {SessionQueryEngine}=fromHost('@deepseek-ai/dsh-session-query');
+  const {hostSessionReader,registerSessionReader}=require('../lib/studio/sessions.js');
   const version = fromHost('@deepseek-ai/dsh-system-prompt/package.json').version;
   const pluginVersion = require('../package.json').version;
   const plugin = require('../lib/index.js');
@@ -21,7 +24,7 @@ async function main() {
   const previousHome = process.env.DSH_HOME;
   process.env.DSH_HOME = temporary;
   const ctx = new Context();
-  let service, injection, web, api;
+  let service, injection, web, api,sessions,sessionQuery,stopReader;
   try {
     service = ctx.plugin(SystemPrompt, {});
     await new Promise(setImmediate);
@@ -52,6 +55,12 @@ async function main() {
     assembly=await ctx.systemPrompt.assemble();
     assert.equal(assembly.sections.find(s=>s.name==='prompt-lab:custom').text,'');
     assert.ok(assembly.sections.find(s=>s.name==='prompt-lab:rules').text.includes('shared policy'));
+    sessions=ctx.plugin(SessionStore);await new Promise(setImmediate);sessionQuery=ctx.plugin(SessionQueryEngine);await new Promise(setImmediate);
+    const feedback=ctx.sessions.create('synthetic-feedback',{meta:{cwd:temporary}});
+    feedback.append('user/message',{id:'user-fixture',role:'user',source:{kind:'user'},content:[{type:'text',text:'Provide actual verification evidence.'}]},{surfaceOp:'append'});
+    feedback.append('assistant/message',{turn:0,step:0,stream:[],message:{id:'assistant-fixture',role:'assistant',source:{kind:'model',provider:'fixture',model:'fixture'},content:[{type:'reasoning',text:'private reasoning excluded'},{type:'text',text:'Visible answer only.'}]}},{surfaceOp:'append'});
+    const reader=hostSessionReader(ctx.sessionQuery);assert.ok((await reader.list()).some(s=>s.id==='synthetic-feedback'));
+    const feedbackPreview=await reader.preview('synthetic-feedback');assert.equal(feedbackPreview.messages.length,2);assert.equal(feedbackPreview.messages[1].text,'Visible answer only.');stopReader=registerSessionReader(reader);
     web=ctx.plugin(WebServer,{host:'127.0.0.1',port:0});
     await new Promise(setImmediate);
     api=ctx.plugin(ui);await new Promise(setImmediate);
@@ -60,6 +69,8 @@ async function main() {
     const live=await fetch(origin+'/prompt-lab/api',{headers}); assert.equal(live.status,200);
     assert.equal((await live.json()).version,pluginVersion);
     const studio=await fetch(origin+'/prompt-lab/api/studio',{headers});assert.equal(studio.status,200);assert.equal((await studio.json()).available,false);
+    const sessionPreview=await fetch(origin+'/prompt-lab/api/studio?kind=session&id=synthetic-feedback',{headers});assert.equal(sessionPreview.status,200);assert.equal((await sessionPreview.json()).messages[0].text,'Provide actual verification evidence.');
+    const versions=await fetch(origin+'/prompt-lab/api/studio?kind=versions',{headers});assert.equal(versions.status,200);assert.ok((await versions.json()).revisions.length>0);
     const exported=await fetch(origin+'/prompt-lab/api/export?kind=profile&id=default',{headers});
     const bundle=(await exported.json()).bundle;assert.equal(bundle.ruleSets.length,1);
     const preview=await fetch(origin+'/prompt-lab/api/import',{method:'POST',headers,body:JSON.stringify({action:'preview',bundle})});
@@ -89,8 +100,9 @@ async function main() {
     await injection.dispose(); injection = null;
     assert.equal((await ctx.systemPrompt.assemble()).contexts.length, 1);
     console.log(JSON.stringify({ ok: true, hostVersion: version, node: process.version,
-      checks: ['dynamic two-section injection', 'saved profile', 'redact', 'process snapshot', 'shared rules and independent switches', 'real WebServer API/export/import/disposal', 'studio offline isolation and disposal', 'disabled injection with strip', 'dispose restores host'] }));
+      checks: ['dynamic two-section injection', 'saved profile', 'redact', 'process snapshot', 'shared rules and independent switches', 'real WebServer API/export/import/disposal', 'studio offline isolation and disposal','real SessionStore/SessionQuery selected visible messages','asset version API', 'disabled injection with strip', 'dispose restores host'] }));
   } finally {
+    stopReader?.();await sessionQuery?.dispose();await sessions?.dispose();
     await injection?.dispose();
     await api?.dispose();
     await web?.dispose();

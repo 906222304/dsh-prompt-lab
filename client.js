@@ -53,6 +53,7 @@ window.__ModuleLoader__.load({
 @media(prefers-reduced-motion:reduce){.pl-view *{transition:none!important}}
 .pl-view{position:relative}.pl-studio-overlay{position:absolute;inset:0;z-index:40;background:#0005;display:flex;justify-content:flex-end}.pl-studio{width:min(1050px,100%);height:100%;display:flex;flex-direction:column;background:var(--pl-bg);box-shadow:-10px 0 35px #0002;min-width:0}.pl-studio-head{padding:17px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--pl-paper);border-bottom:1px solid var(--pl-line);flex:none}.pl-studio-head h2{font-size:16px;font-weight:600}.pl-studio-head p{font-size:11px;color:var(--pl-muted);margin-top:2px}.pl-studio-body{padding:20px 22px;overflow:auto;flex:1;min-height:0;scrollbar-width:thin}.pl-studio-grid{display:grid;grid-template-columns:290px minmax(0,1fr);gap:18px;align-items:start}.pl-studio-form,.pl-candidate{padding:18px;min-width:0}.pl-studio-form .pl-field:first-child{margin-top:0}.pl-studio-form .pl-select{width:100%}.pl-studio-form .pl-textarea{min-height:105px;padding:10px;font-size:12px}.pl-studio-note{font-size:11px;line-height:1.8;color:var(--pl-muted);margin:9px 0;overflow-wrap:anywhere}.pl-studio-buttons{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}.pl-studio-buttons .pl-btn{flex:1}.pl-studio-history{margin-top:17px}.pl-studio-history>summary{cursor:pointer;font-size:11px;color:var(--pl-muted)}.pl-history-item{border:0;border-bottom:1px solid var(--pl-line);background:transparent;padding:9px 0;text-align:left;width:100%;display:block;font-size:11px}.pl-history-item small{display:block;color:var(--pl-muted);margin-top:3px}.pl-candidate h3{font-size:15px}.pl-candidate h4{font-size:12px;margin:16px 0 8px}.pl-candidate .pl-pre{max-height:280px;margin-top:8px}.pl-candidate ul{padding-left:17px;margin:7px 0;font-size:11px;line-height:1.9}.pl-candidate-rule{padding:12px;border:1px solid var(--pl-line);border-radius:8px;margin:9px 0;overflow-wrap:anywhere}.pl-candidate-rule>label{display:flex;align-items:center;gap:8px;font-weight:550;font-size:12px}.pl-candidate-rule p{font-size:11px;color:var(--pl-muted);line-height:1.9;margin-top:5px}.pl-candidate-rule .pl-pre{font-size:11px;max-height:170px}.pl-candidate-rule input{flex:none}.pl-diff{display:grid;grid-template-columns:1fr 1fr;gap:10px;min-width:0}.pl-diff pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:290px;overflow:auto;font:11px/1.8 Consolas,'Microsoft YaHei UI',monospace;background:var(--pl-soft);padding:10px;border:1px solid var(--pl-line);border-radius:7px;color:var(--pl-text)}.pl-diff span{display:block;min-height:1.8em}.pl-diff .added{background:color-mix(in srgb,var(--pl-green) 13%,transparent)}.pl-diff .removed{background:color-mix(in srgb,#c75a5a 13%,transparent)}.pl-diff-label{font-size:10px;color:var(--pl-muted);margin-bottom:5px}.pl-studio-status{padding:12px;background:var(--pl-pill);border-radius:8px;font-size:11px;line-height:1.8}.pl-ai-entry{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.pl-ai-entry .pl-btn{font-size:11px}
 @container(max-width:850px){.pl-studio-grid{grid-template-columns:1fr}.pl-studio-body{padding:16px}.pl-studio-form,.pl-candidate{padding:16px}.pl-studio-head{padding:15px 17px}.pl-diff{grid-template-columns:1fr}}
+.pl-experiment{padding:20px;margin-top:18px}.pl-experiment h3{font-size:14px}.pl-experiment h4{font-size:12px;margin:15px 0 8px}.pl-experiment .pl-textarea{min-height:90px;padding:10px}.pl-experiment .pl-select{max-width:100%}.pl-experiment .pl-diff>div{min-width:0}.pl-experiment .pl-inline input{flex:1;min-width:90px}.pl-studio-body>.pl-select{width:100%}@container(max-width:500px){.pl-experiment{padding:15px}.pl-experiment .pl-select{width:100%}.pl-studio-body>.pl-studio-buttons .pl-btn{white-space:normal}}
 `;
 
     /**
@@ -167,6 +168,7 @@ window.__ModuleLoader__.load({
       const [busy, setBusy] = useState(false);
       const [error, setError] = useState("");
       const [moreOpen, setMoreOpen] = useState(false);
+      const [careOpen,setCareOpen]=useState(false);
       const working = useRef(false);
       const mounted = useRef(false);
       const current = useRef(draft); current.current = draft;
@@ -207,7 +209,8 @@ window.__ModuleLoader__.load({
       const selectedRule = data.ruleSets.find(item => item.id === draft.id);
       return h("section", { "aria-label": "共享规则库", onPointerDown: e => { if (moreOpen && !e.target.closest(".pl-library-more")) setMoreOpen(false); } },
         h("div", { className: "pl-page-heading" }, h("div", null, h("h1", null, "共享规则库"), h("p", null, "从规范和反馈提取规则，在多套配置中重复使用。")),
-          h("div", { className: "pl-ai-entry" }, onAI ? btn("AI 整理规则", () => onAI(draft.id ? [draft.id] : []), "accent", busy) : null, btn("新建规则", () => choose(null), "", busy))),
+          h("div", { className: "pl-ai-entry" }, onAI ? btn("AI 整理规则", () => onAI(draft.id ? [draft.id] : []), "accent", busy) : null,btn("去重与修剪",()=>setCareOpen(true),"",busy), btn("新建规则", () => choose(null), "", busy))),
+        careOpen?h(RuleCarePanel,{data,onCommitted,onAI,onClose:()=>setCareOpen(false)}):null,
         error ? h("p", { className: "pl-error" }, error) : null,
         h("div", { className: "pl-mobile-picker" },
           h("select", { className: "pl-select", "aria-label": "选择共享规则", value: draft.id, disabled: busy,
@@ -228,7 +231,7 @@ window.__ModuleLoader__.load({
             h("textarea", { className: "pl-textarea", "aria-label": "规则正文", placeholder: "编写可复用的约定与要求…", value: draft.text, disabled: busy, onChange: e => change("text", e.target.value) }),
             h("p", { className: "pl-library-ref" }, selectedRule?.usedBy?.length ? "引用此规则的配置：" + selectedRule.usedBy.map(item => item.name).join("、") + "。删除前须解除全部引用。" : "暂无配置引用"),
             h("div", { className: "pl-library-actions" },
-              h("div", { className: "pl-library-more" }, h("button", { className: "pl-btn quiet", type: "button", "aria-expanded": moreOpen, onClick: () => setMoreOpen(!moreOpen) }, icon("more"), "更多操作"),
+              h("div", { className: "pl-library-more" }, h("button", { className: "pl-btn quiet", type: "button",disabled:busy, "aria-expanded": moreOpen, onClick: () => setMoreOpen(!moreOpen) }, icon("more"), "更多操作"),
                 moreOpen ? h("div", { className: "pl-menu-actions", style: { position: "absolute", bottom: 40, left: 0, width: 248, padding: 12, background: "var(--pl-paper)", border: "1px solid var(--pl-line)", borderRadius: 10, boxShadow: "0 8px 28px #0002", zIndex: 8 } },
                   btn("复制规则", () => mutate("duplicate"), "", busy || !draft.id),
                   btn("导出规则", () => downloadBundle("rule", draft.id).catch(e => setError(e.message)), "", busy || !draft.id),
@@ -319,14 +322,143 @@ window.__ModuleLoader__.load({
       }
       return {left,right};
     }
+    const studioAPI=(method="GET",body,query="")=>api(method,body,0,"/prompt-lab/api/studio"+query);
+    const dialogControls=root=>[...root.querySelectorAll('button,input,select,textarea,summary,[tabindex="0"]')].filter(node=>{
+      if(node.disabled||!node.getClientRects().length)return false;
+      for(let parent=node.parentElement;parent&&parent!==root;parent=parent.parentElement)if(parent.tagName==='DETAILS'&&!parent.open&&node!==parent.querySelector(':scope > summary'))return false;
+      return true;
+    });
+    function ToolDialog({title,onClose,children}){
+      const ref=useRef(null);
+      useEffect(()=>{const previous=document.activeElement;ref.current?.focus();return()=>previous?.focus?.();},[]);
+      return h("div",{className:"pl-studio-overlay"},h("section",{className:"pl-studio",role:'dialog','aria-modal':true,'aria-label':title,ref,tabIndex:-1,onKeyDown:e=>{
+        if(e.key==='Escape'){e.stopPropagation();onClose();}
+        if(e.key==='Tab'){const nodes=dialogControls(ref.current);const first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}
+      }},h("header",{className:"pl-studio-head"},h("h2",null,title),iconButton("关闭"+title,'close',onClose)),h("div",{className:"pl-studio-body"},children)));
+    }
+    function RuleCarePanel({data,onCommitted,onAI,onClose}){
+      const [analysis,setAnalysis]=useState(null),[ids,setIds]=useState([]),[error,setError]=useState(""),[busy,setBusy]=useState(false);
+      async function load(){const r=await studioAPI('GET',undefined,'?kind=rules-analysis');setAnalysis(r);setIds([]);}
+      useEffect(()=>{load().catch(e=>setError(e.message));},[]);
+      async function maintain(mode){
+        const rules=analysis.rules.filter(r=>ids.includes(r.id)),used=[...new Set(rules.flatMap(r=>r.usedBy.map(p=>p.name)))];
+        if(!window.confirm((mode==='delete'?'删除':'停用')+'所选 '+ids.length+' 条规则？'+(used.length?'影响引用配置：'+used.join('、'):'所选规则未被引用')+'。操作将记录版本。'))return;
+        setBusy(true);setError('');try{const r=await studioAPI('POST',{action:'rules.maintain',mode,ids,versions:Object.fromEntries(rules.map(r=>[r.id,r.version])),confirm:true,expectedStoreVersion:analysis.storeVersion});onCommitted(r);await load();}catch(e){setError(e.message);}finally{setBusy(false);}
+      }
+      const selected=analysis?.rules.filter(r=>ids.includes(r.id))||[];
+      return h(ToolDialog,{title:'规则去重与修剪',onClose},h("p",{className:'pl-notice'},'完全相同正文可直接核对；语义合并由 AI 提案并人工审阅。停用会影响所有引用配置；只允许删除未引用规则。合并另存时只替换新方案引用。'),
+        error?h('p',{className:'pl-error'},error):null,analysis?h(React.Fragment,null,h('p',{className:'pl-studio-note'},'发现 '+analysis.duplicates.length+' 组相同正文，'+analysis.rules.filter(r=>!r.usedBy.length).length+' 条未引用规则。'),
+          ...analysis.duplicates.map((group,i)=>h('p',{className:'pl-studio-note',key:i},'重复组 '+(i+1)+'：'+group.map(id=>analysis.rules.find(r=>r.id===id).name).join('、'))),
+          btn('选择未引用规则',()=>setIds(analysis.rules.filter(r=>!r.usedBy.length).map(r=>r.id)),'quiet',busy),btn('清空选择',()=>setIds([]),'quiet',busy),
+          ...analysis.rules.map(r=>h('div',{className:'pl-candidate-rule',key:r.id},h('label',null,h('input',{type:'checkbox',checked:ids.includes(r.id),'aria-label':'维护规则 '+r.name,disabled:busy,onChange:e=>setIds(v=>e.target.checked?[...v,r.id]:v.filter(id=>id!==r.id))}),r.name+' · '+(r.enabled?'启用':'停用')),h('p',{className:'pl-studio-note'},r.usedBy.length?'影响：'+r.usedBy.map(p=>p.name).join('、'):'没有配置引用'),h('details',{className:'pl-details'},h('summary',null,'规则正文'),h('pre',{className:'pl-pre'},r.text)))),
+          h('div',{className:'pl-studio-buttons'},btn('AI 合并所选规则',()=>{onClose();onAI(ids,'curate');},'accent',busy||ids.length<2),btn('停用所选规则',()=>maintain('disable'),'',busy||!ids.length),btn('删除未引用规则',()=>maintain('delete'),'danger',busy||!ids.length||selected.some(r=>r.usedBy.length)),btn('重新载入引用关系',()=>load().catch(e=>setError(e.message)),'quiet',busy))):h('p',null,'读取规则引用…'));
+    }
+    function VersionPanel({data,profileId,onCommitted,onOpenProfile,onClose}){
+      const [revisions,setRevisions]=useState([]),[record,setRecord]=useState(null),[side,setSide]=useState('after'),[chosen,setChosen]=useState(profileId),[ruleId,setRuleId]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[restored,setRestored]=useState(null),[loading,setLoading]=useState(true),[pending,setPending]=useState(0);
+      async function load(){setLoading(true);try{const r=await studioAPI('GET',undefined,'?kind=versions');setRevisions(r.revisions);setPending(r.pending||0);}finally{setLoading(false);}}
+      useEffect(()=>{load().catch(e=>setError(e.message));},[]);
+      async function choose(id){setError('');setRecord(null);try{if(id){const r=await studioAPI('GET',undefined,'?kind=revision&id='+encodeURIComponent(id));setRecord(r.revision);}}catch(e){setError(e.message);}}
+      const graph=record?.[side],profile=graph?.profiles.find(p=>p.id===chosen),rule=graph?.ruleSets.find(r=>r.id===ruleId);
+      async function restore(mode,asRule=false){
+        if(mode==='replace'&&!window.confirm('用此快照替换当前编辑配置的已保存正文、规则顺序和开关？旧共享规则会复制恢复，其他配置保持原内容。当前未保存草稿仍保留。'))return;
+        setBusy(true);setError('');try{const target=data.profiles.find(p=>p.id===profileId),r=await studioAPI('POST',{action:'revision.restore',revisionId:record.id,side,profileId:chosen,mode,targetId:profileId,expectedVersion:target?.version,ruleId:asRule?ruleId:undefined,confirm:mode==='replace',expectedStoreVersion:data.storage.storeVersion});onCommitted(r);setRestored(r);await load();}catch(e){setError(e.message);}finally{setBusy(false);}
+      }
+      return h(ToolDialog,{title:'版本记录与恢复',onClose},h('p',{className:'pl-notice'},'保存配置、规则或启用项时记录前后快照，最多保留最近 30 条且总计 32 MiB。恢复会保留正文、规则内容、顺序与开关；不会自动切换全局启用项。设置页开关不属于这些资产版本。'),
+        error?h('p',{className:'pl-error'},error):null,h('select',{className:'pl-select','aria-label':'选择资产版本',value:record?.id||'',disabled:busy,onChange:e=>choose(e.target.value)},h('option',{value:''},'选择一次保存记录'),...revisions.map(r=>h('option',{key:r.id,value:r.id},r.createdAt+' · 数据版本 '+r.storeVersion+' · '+r.profiles.filter(p=>r.changes.profiles.includes(p.id)).map(p=>p.name).join('、')))),
+        loading?h('p',{className:'pl-empty'},'读取版本记录…'):!revisions.length?h('p',{className:'pl-empty'},'尚无版本记录。此功能从安装本版后的首次资产保存开始记录。'):null,
+        pending?h('p',{className:'pl-notice'},pending+' 条保存记录尚无法确认提交，已保留原文件，未列入可恢复版本。'):null,
+        record?h(React.Fragment,null,h('label',{className:'pl-field'},'查看快照'),h('select',{className:'pl-select','aria-label':'快照方向',value:side,disabled:busy,onChange:e=>setSide(e.target.value)},h('option',{value:'before'},'本次保存之前'),h('option',{value:'after'},'本次保存之后')),
+          h('label',{className:'pl-field'},'恢复配置'),h('select',{className:'pl-select','aria-label':'快照中的配置',value:profile?.id||'',disabled:busy,onChange:e=>setChosen(e.target.value)},h('option',{value:''},'选择配置'),...graph.profiles.map(p=>h('option',{key:p.id,value:p.id},p.name))),
+          profile?h(React.Fragment,null,h('p',{className:'pl-studio-note'},'正文 '+(profile.promptEnabled?'启用':'停用')+' · 规则段 '+(profile.rulesEnabled?'启用':'停用')),h('pre',{className:'pl-pre'},profile.prompt),h('pre',{className:'pl-pre'},profile.rules||'（无附加规则）'),
+            ...profile.ruleIds.map((id,i)=>{const r=graph.ruleSets.find(r=>r.id===id);return h('details',{className:'pl-details',key:id},h('summary',null,(i+1)+'. '+r.name+' · '+(r.enabled?'启用':'停用')),h('pre',{className:'pl-pre'},r.text));}),
+            h('div',{className:'pl-studio-buttons'},btn('另存恢复方案',()=>restore('copy'),'accent',busy),btn('替换当前已保存配置',()=>restore('replace'),'',busy))):null,
+          h('details',{className:'pl-details'},h('summary',null,'只恢复一条历史规则'),h('div',{className:'pl-details-content'},h('select',{className:'pl-select','aria-label':'快照中的规则',value:ruleId,disabled:busy,onChange:e=>setRuleId(e.target.value)},h('option',{value:''},'选择规则'),...graph.ruleSets.map(r=>h('option',{key:r.id,value:r.id},r.name))),rule?h(React.Fragment,null,h('pre',{className:'pl-pre'},rule.text),btn('另存恢复规则',()=>restore('copy',true),'',busy)):null))):null,
+        restored?h('p',{className:'pl-notice'},'已保存恢复结果，未自动启用。',restored.editedId?btn('打开恢复方案',()=>{if(onOpenProfile(restored,restored.editedId))onClose();},'quiet',busy):null):null);
+    }
+    function ModelRoute({label,value,onChange,providers,disabled}) {
+      const [models,setModels]=useState([]),[error,setError]=useState("");
+      useEffect(()=>{let live=true;if(value?.provider)studioAPI("GET",undefined,"?provider="+encodeURIComponent(value.provider)).then(r=>{if(live)setModels(r.models||[]);}).catch(e=>{if(live)setError(e.message);});return()=>{live=false;};},[value?.provider]);
+      return h("div",null,h("label",{className:"pl-field"},label),
+        h("select",{className:"pl-select","aria-label":label+"供应商",disabled,value:value?.provider||"",onChange:e=>onChange({provider:e.target.value,model:""})},...(providers||[]).map(p=>h("option",{key:p.id,value:p.id},p.name||p.id))),
+        h("select",{className:"pl-select","aria-label":label,disabled,value:value?.model||"",onChange:e=>onChange({...value,model:e.target.value}),style:{marginTop:7}},
+          !models.some(m=>m.id===value?.model)?h("option",{value:value?.model||""},value?.model||"请选择模型"):null,...models.map(m=>h("option",{key:m.id,value:m.id},m.name||m.id))),
+        h("select",{className:"pl-select","aria-label":label+"推理强度",disabled,value:value?.reasoningEffort||"",onChange:e=>{const next={...value};if(e.target.value)next.reasoningEffort=e.target.value;else delete next.reasoningEffort;onChange(next);},style:{marginTop:7}},
+          ...[["","宿主默认推理强度"],["low","低"],["medium","中"],["high","高"],["max","最高"]].map(([id,name])=>h("option",{key:id,value:id},name))),
+        h('label',{className:'pl-field'},'温度（留空使用宿主默认）',h('input',{className:'pl-select',type:'number',min:0,max:2,step:0.05,value:value?.temperature??'',disabled,onChange:e=>{const next={...value};if(e.target.value==='')delete next.temperature;else next.temperature=Number(e.target.value);onChange(next);}})),error?h("p",{className:"pl-studio-note"},error):null);
+    }
+    function SessionPicker({onChange,disabled,available}) {
+      const [sessions,setSessions]=useState([]),[id,setId]=useState(""),[preview,setPreview]=useState(null),[selected,setSelected]=useState([]),[error,setError]=useState("");
+      async function list(){try{setError("");const r=await studioAPI("GET",undefined,"?kind=sessions");setSessions(r.sessions);}catch(e){setError(e.message);}}
+      async function inspect(value){setPreview(null);setSelected([]);onChange(null);setError("");try{const r=await studioAPI("GET",undefined,"?kind=session&id="+encodeURIComponent(value));setPreview(r);}catch(e){setError(e.message);}}
+      function select(seq,checked){const ids=checked?[...selected,seq]:selected.filter(s=>s!==seq);setSelected(ids);onChange(ids.length?{sessionId:preview.sessionId,events:preview.messages.filter(m=>ids.includes(m.seq)).map(m=>({seq:m.seq,hash:m.hash}))}:null);}
+      return h("details",{className:"pl-details"},h("summary",null,"从会话中选择反馈"),h("div",{className:"pl-details-content"},
+        h("p",{className:"pl-studio-note"},"先预览，再勾选 1–12 条消息。只发送所选可见文字；工具结果与推理不带入。长消息只取预览的前 6000 字。助手自述不视为已验证结果。"),
+        !available?h("p",{className:"pl-notice"},"当前宿主未提供会话服务，可以在材料区粘贴反馈。"):null,
+        btn("读取会话列表",list,"",disabled||!available),
+        h("select",{className:"pl-select","aria-label":"反馈来源会话",value:id,disabled:disabled||!available,onChange:e=>{setId(e.target.value);if(e.target.value)inspect(e.target.value);}},h("option",{value:""},"选择最近 60 个会话之一"),...sessions.map(s=>h("option",{key:s.id,value:s.id},s.title||[s.workspace,s.createdAt,s.id].filter(Boolean).join(" · ")))),
+        h("label",{className:"pl-field"},"或填写较早会话 ID"),h("input",{className:"pl-select","aria-label":"反馈会话 ID",value:id,disabled,maxLength:200,onChange:e=>setId(e.target.value)}),btn("预览此会话",()=>inspect(id),"quiet",disabled||!available||!id),
+        error?h("p",{className:"pl-error"},error):null,preview?h("p",{className:"pl-studio-note"},"已选 "+selected.length+" 条 · 会话 "+preview.sessionId+" · 读取至事件 "+preview.capturedThroughSeq):null,
+        ...(preview?.messages||[]).map(m=>h("div",{className:"pl-candidate-rule",key:m.seq},h("label",null,h("input",{type:"checkbox","aria-label":"选择反馈消息 "+m.seq,checked:selected.includes(m.seq),disabled:disabled||(!selected.includes(m.seq)&&selected.length>=12),onChange:e=>select(m.seq,e.target.checked)}),m.role+" · #"+m.seq+(m.truncated?" · 已截断":"")),h("pre",{className:"pl-pre"},m.text)))));
+    }
+    function ExperimentResults({job}) {
+      const result=job?.result;if(!result||result.kind==='examples')return null;
+      const comparisons=[result.comparison&&["两版对比",result.comparison],...result.rounds.map(r=>["训练轮次 "+r.round+(r.selected?" · 留作候选":" · 未选中"),r.comparison]),result.validation&&["独立保留样例",result.validation],result.current&&["进行中的对比",result.current]].filter(Boolean);
+      const rowView=row=>h("div",null,h("p",{className:"pl-studio-note"},row.error?"失败："+row.error:(row.pass?"通过":"未通过")+" · 得分 "+row.score.toFixed(2)+" · "+row.latencyMs+" ms"),h("pre",{className:"pl-pre"},row.output||"（无输出）"),
+        ...row.checks.map((c,i)=>h("p",{className:"pl-studio-note",key:i},(c.pass?"✓ ":"× ")+c.type+" · "+c.reason)),row.semantic?h("p",{className:"pl-studio-note"},"语义评分 "+row.semantic.score+" · "+row.semantic.reason):null,
+        row.route?h("p",{className:"pl-studio-note"},row.route.provider+" / "+row.route.model+" · 输入 "+(row.usage?.inputTokens??"未知")+" / 输出 "+(row.usage?.outputTokens??"未知")+" Token"):null);
+      return h("section",{className:"pl-surface pl-experiment","aria-label":"试跑结果"},h("h3",null,result.complete?(result.accepted?"文本试跑有提升 · 待人工审阅":"未证明提升 · 保留原版"):"试跑尚未完整完成 · 不可据此认定提升"),
+        h("p",{className:"pl-studio-note"},result.scope),h("p",{className:"pl-studio-note"},"测试集 "+result.suite.name+" · 修订 "+result.suite.revision+" · "+result.suite.hash),
+        result.exploratory?h("p",{className:"pl-notice"},"探索性结果：保留样例少于 3 条或已重复使用。请补充独立真实失败样例，避免针对测试集过拟合。"):null,
+        ...comparisons.map(([label,comparison],i)=>h("details",{className:"pl-details",key:i,open:i===comparisons.length-1},h("summary",null,label+(comparison.summary?" · 当前 "+comparison.summary.baseline.passed+" / 候选 "+comparison.summary.candidate.passed+" 通过":"")),h("div",{className:"pl-details-content"},
+          ...comparison.baseline.map((left,index)=>h("div",{key:left.caseId},h("h4",null,left.caseId+" · "+left.split),h("div",{className:"pl-diff"},h("div",null,h("p",{className:"pl-diff-label"},"当前草稿"),rowView(left)),h("div",null,h("p",{className:"pl-diff-label"},"候选"),comparison.candidate[index]?rowView(comparison.candidate[index]):"等待输出"))))))),
+        h("details",{className:"pl-details"},h("summary",null,"冻结输入、预算与调用记录"),h("pre",{className:"pl-pre"},JSON.stringify({input:job.input,calls:job.calls,usage:job.usage},null,2))));
+    }
+    function ExperimentPanel({seed,indices,activeJob,route,cap,disabled,onStart}) {
+      const [suites,setSuites]=useState([]),[suite,setSuite]=useState(null),[savedSuite,setSavedSuite]=useState(''),[error,setError]=useState(""),[saving,setSaving]=useState(false);
+      const [target,setTarget]=useState(null),[judge,setJudge]=useState(null),[common,setCommon]=useState("");
+      const [maxCalls,setMaxCalls]=useState(24),[maxRounds,setMaxRounds]=useState(2),[maxOutputTotal,setMaxOutputTotal]=useState(24000);
+      useEffect(()=>{if(route){setTarget(r=>r||route);setJudge(r=>r||route);}},[route?.provider,route?.model]);
+      async function reload(){const r=await studioAPI("GET",undefined,"?kind=suites");setSuites(r.suites);if(r.warning)setError(r.warning);}
+      useEffect(()=>{reload().catch(e=>setError(e.message));},[]);
+      useEffect(()=>{if(activeJob?.result?.kind==='examples'){setSuite(activeJob.result.suite);setSavedSuite(JSON.stringify(activeJob.result.suite));reload().catch(e=>setError(e.message));}},[activeJob?.result?.suite?.id]);
+      const newCase=split=>({id:'case-'+Math.random().toString(36).slice(2,8),split,input:'',reference:'',checks:[{type:'contains',value:''}],rubric:'',threshold:0.7});
+      function update(index,key,value){setSuite(s=>({...s,cases:s.cases.map((c,i)=>i===index?{...c,[key]:value}:c)}));}
+      async function save(){setSaving(true);setError("");try{const r=await studioAPI("POST",{action:'suite.save',suite:{...suite,expectedRevision:suite.revision}});setSuite(r.suite);setSavedSuite(JSON.stringify(r.suite));await reload();}catch(e){setError(e.message);}finally{setSaving(false);}}
+      async function choose(id){if(suite&&JSON.stringify(suite)!==savedSuite&&!window.confirm('放弃未保存的测试集编辑并切换？'))return;setError("");try{const next=id?(await studioAPI("GET",undefined,"?kind=suite&id="+encodeURIComponent(id))).suite:null;setSuite(next);setSavedSuite(JSON.stringify(next));}catch(e){setError(e.message);}}
+      async function remove(){if(!window.confirm("删除这个测试集？已有任务的冻结样例仍保留。"))return;try{await studioAPI("POST",{action:'suite.remove',id:suite.id,expectedRevision:suite.revision});setSuite(null);await reload();}catch(e){setError(e.message);}}
+      function start(operation){onStart({operation,candidateJobId:seed?.id,indices,suiteId:suite?.id,suiteRevision:suite?.revision,targetRoute:target,judgeRoute:judge,commonContext:common,budget:{maxCalls,maxRounds,maxOutputTotal},goal:'检验与改进当前候选'});}
+      const train=suite?.cases.filter(c=>c.split==='train').length||0,validation=suite?.cases.filter(c=>c.split==='validation').length||0;
+      return h("section",{className:"pl-surface pl-experiment","aria-label":"试跑与迭代"},h("h3",null,"试跑与迭代"),h("p",{className:"pl-studio-note"},"候选："+(seed?.candidate?.content.name||"先生成一份带正文的候选")+"。固定同一测试模型、参数和背景，对比当前草稿与所勾选候选。仅测试补充段文本，不执行工具，也不代表 Coding Agent 实测。"),
+        error?h("p",{className:"pl-error"},error):null,h("div",{className:"pl-studio-buttons"},btn("AI 生成测试样例",()=>start('examples'),"",disabled||!cap?.available),btn("手动新建测试集",()=>setSuite({name:'新测试集',cases:[newCase('train'),newCase('validation')]}),"quiet",disabled)),
+        h("select",{className:"pl-select","aria-label":"选择测试集",value:suite?.id||"",disabled,onChange:e=>choose(e.target.value)},h("option",{value:""},"选择已保存测试集"),...suites.map(s=>h("option",{key:s.id,value:s.id},s.name+" · r"+s.revision+" · "+s.train+" 训练 / "+s.validation+" 保留"))),
+        suite?h("details",{className:"pl-details",open:!suite.id?true:undefined},h("summary",null,"审核与编辑样例 · "+train+" 训练 / "+validation+" 保留"),h("div",{className:"pl-details-content"},
+          h("p",{className:"pl-notice"},suite.origin==='ai'?"AI 样例草稿：请审核标准、事实参考和覆盖面。生成成功不证明提示词更好。":"训练样例用于改写；保留样例只作最后核验。多次使用同一保留集会降低结论可信度。"),
+          h("input",{className:"pl-select","aria-label":"测试集名称",value:suite.name,disabled:disabled||saving,maxLength:80,onChange:e=>setSuite({...suite,name:e.target.value})}),
+          ...suite.cases.map((c,i)=>h("details",{className:"pl-details",key:c.id,open:!suite.id?true:undefined},h("summary",null,(i+1)+". "+(c.input.slice(0,40)||"待填写样例")+" · "+c.split),h("div",{className:"pl-details-content"},
+            h("select",{className:"pl-select","aria-label":"样例分组 "+i,value:c.split,disabled,onChange:e=>update(i,'split',e.target.value)},h("option",{value:'train'},"训练样例"),h("option",{value:'validation'},"独立保留样例")),
+            ...[['input','用户输入',8000],['reference','参考答案或事实资料',4000],['rubric','语义评分标准（可选）',2000]].map(([key,label,max])=>h("label",{className:"pl-field",key},label,h("textarea",{className:"pl-textarea","aria-label":label+" "+i,value:c[key]||'',maxLength:max,disabled,onChange:e=>update(i,key,e.target.value)}))),
+            h("label",{className:"pl-field"},"语义通过阈值（0–1）",h("input",{className:"pl-select",type:'number',min:0,max:1,step:0.05,value:c.threshold??0.7,disabled,onChange:e=>update(i,'threshold',Number(e.target.value))})),
+            h("p",{className:"pl-studio-note"},"确定性检查（全数通过才算通过）"),...c.checks.map((check,j)=>h("div",{className:"pl-inline",key:j},h("select",{className:"pl-select","aria-label":"检查类型 "+i+" "+j,value:check.type,disabled,onChange:e=>update(i,'checks',c.checks.map((v,k)=>k===j?{type:e.target.value,...(e.target.value==='isJson'?{}:{value:e.target.value==='maxChars'?1000:e.target.value==='hasKeys'?['ok']:''})}:v))},
+              ...[['contains','包含'],['notContains','不包含'],['equals','完全一致'],['startsWith','开头为'],['isJson','合法 JSON'],['hasKeys','JSON 必需字段'],['maxChars','最长字符数']].map(([id,name])=>h("option",{key:id,value:id},name))),
+              check.type!=='isJson'?h("input",{className:"pl-select","aria-label":"检查内容 "+i+" "+j,value:Array.isArray(check.value)?check.value.join(','):check.value??'',disabled,onChange:e=>update(i,'checks',c.checks.map((v,k)=>k===j?{...v,value:check.type==='maxChars'?Number(e.target.value):check.type==='hasKeys'?e.target.value.split(',').map(s=>s.trim()).filter(Boolean):e.target.value}:v))}):null,
+              btn("移除检查",()=>update(i,'checks',c.checks.filter((_,k)=>k!==j)),"quiet",disabled))),
+            btn("添加检查",()=>update(i,'checks',[...c.checks,{type:'contains',value:''}]),"quiet",disabled||c.checks.length>=12),btn("删除样例",()=>setSuite({...suite,cases:suite.cases.filter((_,n)=>n!==i)}),"quiet",disabled||suite.cases.length<=1)))),
+          h("div",{className:"pl-studio-buttons"},btn("添加样例",()=>setSuite({...suite,cases:[...suite.cases,newCase('train')]}),"",disabled||suite.cases.length>=12),btn("保存测试集",save,"accent",disabled||saving),suite.id?btn("删除测试集",remove,"danger",disabled):null),h("p",{className:"pl-studio-note"},"试跑使用已保存版本；编辑后请先保存。"))):null,
+        h("details",{className:"pl-details"},h("summary",null,"测试模型、背景与预算"),h("div",{className:"pl-details-content"},h("div",{className:"pl-diff"},h(ModelRoute,{label:'测试模型',value:target,onChange:setTarget,providers:cap?.providers,disabled}),h(ModelRoute,{label:'评分模型',value:judge,onChange:setJudge,providers:cap?.providers,disabled})),
+          h("label",{className:"pl-field"},"两版共同背景",h("textarea",{className:"pl-textarea",value:common,maxLength:8000,disabled,onChange:e=>setCommon(e.target.value)})),
+          ...[['最多调用次数',maxCalls,setMaxCalls,1,40],['最多改写轮次',maxRounds,setMaxRounds,1,3],['输出 Token 预留总额',maxOutputTotal,setMaxOutputTotal,1000,24000]].map(([name,value,set,min,max])=>h("label",{className:"pl-field",key:name},name,h("input",{className:"pl-select",type:'number',value,min,max,disabled,onChange:e=>set(Number(e.target.value))}))),
+          h("p",{className:"pl-studio-note"},"任务最长 10 分钟，输入总计 400,000 字节；每个回答最多 1024 Token，改写每次预留 4000 Token。评分和重试均计入总调用。优化只把训练样例发给改写模型，保留样例最后评估一次。生成样例使用左侧生成模型。"))),
+        suite&&JSON.stringify(suite)!==savedSuite?h('p',{className:'pl-notice'},'样例有未保存修改，请保存后试跑。'):null,
+        h("div",{className:"pl-studio-buttons"},btn("两版试跑",()=>start('evaluate'),"",disabled||!seed||!suite?.id||JSON.stringify(suite)!==savedSuite||!target?.model||!judge?.model),btn("预算内优化",()=>start('optimize'),"accent",disabled||!seed||!suite?.id||JSON.stringify(suite)!==savedSuite||!train||!validation||!target?.model||!judge?.model)));
+    }
     let retainedStudio = null;
     function StudioPanel({ initialOperation, sourceRuleIds=[], getContext, onCommitted, onOpenProfile, onReplace, onClose }) {
       const [operation,setOperation]=useState(initialOperation||retainedStudio?.operation||"generate");
-      const [goal,setGoal]=useState(retainedStudio?.goal||"");
+      const [goal,setGoal]=useState(initialOperation==='curate'?'合并重复约束，修剪冗余，说明冲突并保留实质要求。':retainedStudio?.goal||"");
       const [materials,setMaterials]=useState(retainedStudio?.materials||"");
-      const [includeDraft,setIncludeDraft]=useState(initialOperation==="revise"||((!initialOperation||initialOperation===retainedStudio?.operation)&&retainedStudio?.includeDraft)||false);
+      const [includeDraft,setIncludeDraft]=useState(['revise','curate'].includes(initialOperation)||((!initialOperation||initialOperation===retainedStudio?.operation)&&retainedStudio?.includeDraft)||false);
       const [chosenSources,setChosenSources]=useState(sourceRuleIds.length?sourceRuleIds:(!initialOperation||initialOperation===retainedStudio?.operation)?retainedStudio?.chosenSources||[]:[]);
-      const [cap,setCap]=useState(null),[route,setRoute]=useState(null),[job,setJob]=useState(null);
+      const [cap,setCap]=useState(null),[route,setRoute]=useState(null),[job,setJob]=useState(null),[seed,setSeed]=useState(null),[seedIndices,setSeedIndices]=useState([]),[sessionSelection,setSessionSelection]=useState(null);
       const [error,setError]=useState(""),[busy,setBusy]=useState(false),[indices,setIndices]=useState([]);
       const [feedback,setFeedback]=useState(""),[adopted,setAdopted]=useState(null),[showDiff,setShowDiff]=useState(false);
       const lifecycle=useRef({mounted:true,id:retainedStudio?.jobId||null,providerEpoch:0}),inputRef=useRef(null),dialogRef=useRef(null);
@@ -335,7 +467,7 @@ window.__ModuleLoader__.load({
       const running=job&&["queued","running"].includes(job.status);
       const stale=candidate&&(candidate.base.profileId!==context.draft.id||candidate.base.profileVersion!==context.draft.version
         || (candidate.base.draftKey&&candidate.base.draftKey!==studioDraftKey(context.draft)));
-      const statusLabels={queued:"等待模型",running:"生成中",succeeded:"候选已生成 · 尚未验证",failed:"生成失败",cancelled:"已取消",timed_out:"已超时",interrupted:"已中断"};
+      const statusLabels={queued:"等待模型",running:"运行中",succeeded:"任务已完成 · 请审阅结果",failed:"执行失败",cancelled:"已取消",timed_out:"已超时",interrupted:"已中断",budget_exhausted:"预算已耗尽 · 保留部分结果"};
       async function loadJob(id) {
         const result=await request("GET",undefined,"?kind=job&id="+encodeURIComponent(id));
         if(!lifecycle.current.mounted||lifecycle.current.id!==id)return;
@@ -344,6 +476,10 @@ window.__ModuleLoader__.load({
           if(previous?.id!==id||!previous.candidate&&result.job.candidate)setIndices(result.job.candidate?.content.ruleSuggestions.map((_,i)=>i)||[]);
           return result.job;
         });
+        if(result.job.candidate?.content.prompt){setSeed(result.job);setSeedIndices(result.job.candidate.content.ruleSuggestions.map((_,i)=>i));}
+        else if(result.job.input.seedCandidate?.id&&!seed){
+          request("GET",undefined,"?kind=job&id="+encodeURIComponent(result.job.input.seedCandidate.id)).then(r=>{if(lifecycle.current.mounted){setSeed(r.job);setSeedIndices(r.job.candidate?.content.ruleSuggestions.map((_,i)=>i)||[]);}}).catch(()=>{});
+        }
       }
       useEffect(()=>{
         const previousFocus=document.activeElement;
@@ -381,14 +517,22 @@ window.__ModuleLoader__.load({
         lifecycle.current.id=null;if(retainedStudio)retainedStudio.jobId=null;
         try {
           const result=await request("POST",{action:"start",requestId:"ui-"+Date.now()+"-"+Math.random().toString(36).slice(2),
-            operation:refine?"revise":operation,goal:refine?feedback:goal,materials,sourceLabel:"用户选定的需求、规范或反馈",sourceRuleIds:chosenSources,
+            operation:refine?(candidate?.content.prompt?"revise":candidate.operation):operation,goal:refine?feedback:goal,materials,sourceLabel:"用户选定的需求、规范或反馈",sourceRuleIds:chosenSources,
             profileId:context.draft.id,profileVersion:context.draft.version,includeDraft:operation==="revise"||includeDraft,draft:context.draft,
-            route,previousCandidate:refine?candidate.content:null});
+            route,previousCandidate:refine?candidate.content:null,sessionSelection:operation==='learn'&&!refine?sessionSelection:null,sourceJobId:refine?job.id:null});
           if(!lifecycle.current.mounted)return;
           lifecycle.current.id=result.job.id;setJob(result.job);setIndices([]);setShowDiff(false);
           setCap(current=>({...current,history:[{id:result.job.id,name:refine?feedback:goal,status:result.job.status,operation:result.job.input.operation},...(current?.history||[])].slice(0,20)}));
         }catch(e){if(lifecycle.current.mounted)setError(e.message);}
         finally{if(lifecycle.current.mounted)setBusy(false);}
+      }
+      async function startExperiment(options){
+        if(busy||running)return;setBusy(true);setError("");setAdopted(null);
+        try{const current=getContext(),result=await request("POST",{action:'start',requestId:'ui-experiment-'+Date.now()+'-'+Math.random().toString(36).slice(2),...options,
+          profileId:current.draft.id,profileVersion:current.draft.version,draft:current.draft,route});
+          if(!lifecycle.current.mounted)return;lifecycle.current.id=result.job.id;setJob(result.job);setIndices([]);
+          setCap(c=>({...c,history:[{id:result.job.id,name:options.operation,status:result.job.status,operation:options.operation},...(c?.history||[])].slice(0,20)}));
+        }catch(e){if(lifecycle.current.mounted)setError(e.message);}finally{if(lifecycle.current.mounted)setBusy(false);}
       }
       async function cancel() {
         setBusy(true);try{const r=await request("POST",{action:"cancel",id:job.id});if(lifecycle.current.mounted)setJob(r.job);}
@@ -405,7 +549,7 @@ window.__ModuleLoader__.load({
       }
       async function clearHistory() {
         if(!window.confirm("清除本地 AI 创作历史和所选材料记录？已保存配置与规则保持不变。"))return;
-        setBusy(true);try{await request("POST",{action:"clear"});if(lifecycle.current.mounted){lifecycle.current.id=null;setJob(null);setAdopted(null);setCap(c=>({...c,history:[]}));}}
+        setBusy(true);try{await request("POST",{action:"clear"});if(lifecycle.current.mounted){lifecycle.current.id=null;setJob(null);setSeed(null);setAdopted(null);setCap(c=>({...c,history:[]}));}}
         catch(e){if(lifecycle.current.mounted)setError(e.message);}finally{if(lifecycle.current.mounted)setBusy(false);}
       }
       const list=(title,items)=>items?.length?h(React.Fragment,null,h("h4",null,title),h("ul",null,...items.map((item,i)=>h("li",{key:i},item)))):null;
@@ -416,7 +560,7 @@ window.__ModuleLoader__.load({
         onKeyDown:e=>{
           if(e.key==="Escape"){e.stopPropagation();onClose();}
           if(e.key==="Tab"){
-            const nodes=[...dialogRef.current.querySelectorAll('button,input,select,textarea,summary,[tabindex="0"]')].filter(n=>!n.disabled&&n.getClientRects().length);
+            const nodes=dialogControls(dialogRef.current);
             if(!nodes.length)return;const first=nodes[0],last=nodes[nodes.length-1];
             if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
             else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
@@ -429,11 +573,12 @@ window.__ModuleLoader__.load({
             h("p",{className:"pl-studio-note"},"目标配置："+(context.data.profiles.find(p=>p.id===context.draft.id)?.name||context.draft.id)),
             h("label",{className:"pl-field",htmlFor:"pl-ai-operation"},"这次想做什么"),
             h("select",{id:"pl-ai-operation",className:"pl-select",value:operation,disabled:busy||running,onChange:e=>{setOperation(e.target.value);if(e.target.value==="revise")setIncludeDraft(true);}},
-              h("option",{value:"generate"},"描述需求生成"),h("option",{value:"revise"},"按反馈优化当前稿"),h("option",{value:"extract"},"从材料提取规则")),
+              h("option",{value:"generate"},"描述需求生成"),h("option",{value:"revise"},"按反馈优化当前稿"),h("option",{value:"extract"},"从材料提取规则"),h("option",{value:"learn"},"从会话或反馈学习"),h("option",{value:"curate"},"合并与修剪已有规则")),
             h("label",{className:"pl-field",htmlFor:"pl-ai-goal"},operation==="revise"?"想改善什么":"目标或提取要求"),
             h("textarea",{id:"pl-ai-goal",ref:inputRef,className:"pl-textarea","aria-label":"AI 创作需求",maxLength:6000,value:goal,onChange:e=>setGoal(e.target.value),placeholder:"例如：维护 Java 项目，中文，先定位代码，改完验证，少写长计划。"}),
             h("label",{className:"pl-inline pl-studio-note"},h("input",{type:"checkbox",checked:includeDraft||operation==="revise",disabled:operation==="revise"||running,onChange:e=>setIncludeDraft(e.target.checked)}),"带入当前草稿与引用规则"),
-            h("details",{className:"pl-details",open:operation==="extract"?true:undefined},h("summary",null,"选定材料与来源"),h("div",{className:"pl-details-content"},
+            operation==='learn'?h(SessionPicker,{onChange:setSessionSelection,disabled:busy||running,available:cap?.sessionAvailable}):null,
+            h("details",{className:"pl-details",open:['extract','curate','learn'].includes(operation)?true:undefined},h("summary",null,"选定材料与来源"),h("div",{className:"pl-details-content"},
               h("textarea",{className:"pl-textarea","aria-label":"AI 所选材料",maxLength:60000,value:materials,onChange:e=>setMaterials(e.target.value),placeholder:"粘贴项目规范、现有提示词或希望避免的失败反馈。"}),
               h("p",{className:"pl-studio-note"},"粘贴材料 "+materials.length.toLocaleString()+" 字；只发送本次选择，不扫描磁盘或聊天。"),
               context.data.ruleSets?.length?h("div",null,h("p",{className:"pl-studio-note"},"可选带入已有规则（已保存版本）"),btn(chosenSources.length===context.data.ruleSets.length?"不带入已有规则":"带入全部已有规则",()=>setChosenSources(chosenSources.length===context.data.ruleSets.length?[]:context.data.ruleSets.map(r=>r.id)),"quiet",running),...context.data.ruleSets.map(r=>h("label",{className:"pl-inline pl-studio-note",key:r.id},
@@ -447,7 +592,7 @@ window.__ModuleLoader__.load({
             cap?.catalogError?h("p",{className:"pl-studio-note"},cap.catalogError):null,
             h("p",{className:"pl-studio-note"},"复用宿主凭据。每次最多两次调用（含一次格式修复），90 秒 / 输出 4000 Token 上限。创作材料不自动经过设置页的环境脱敏。"),
             cap&&!cap.available?h("p",{className:"pl-notice"},cap.reason):null,
-            h("div",{className:"pl-studio-buttons"},btn(running?"正在生成…":"生成候选",()=>start(),"accent",busy||running||!cap?.available||!route?.model||(!goal.trim()&&!materials.trim())),running?btn("取消生成",cancel,"",busy):null),
+            h("div",{className:"pl-studio-buttons"},btn(running?"正在运行…":"生成候选",()=>start(),"accent",busy||running||!cap?.available||!route?.model||(!goal.trim()&&!materials.trim()&&!sessionSelection)),running?btn("取消生成",cancel,"",busy):null),
             h("details",{className:"pl-studio-history"},h("summary",null,"本地创作历史 · 最近 20 份"),
               ...(cap?.history||[]).map(item=>h("button",{type:"button",className:"pl-history-item",key:item.id,disabled:busy,onClick:()=>{lifecycle.current.id=item.id;setAdopted(null);setError("");loadJob(item.id).catch(e=>setError(e.message));}},item.name||"创作任务",h("small",null,statusLabels[item.status]||item.status))),
               h("p",{className:"pl-studio-note"},"候选、所选材料和必要来源只保存在本地，可随时清除。关闭抽屉后任务继续，可从历史恢复。"),btn("清除创作历史",clearHistory,"quiet",busy||running))),
@@ -458,11 +603,13 @@ window.__ModuleLoader__.load({
               h("div",null,"调用尝试 "+job.usage.calls+" 次 · 输入 "+(job.usage.inputTokens??"未知")+" / 输出 "+(job.usage.outputTokens??"未知")+" Token · 金额未知"),
               running?h("p",null,"已接收 "+job.progressChars+" 字；取消会阻止后续派发，已发出调用仍可能计费。"):null):null,
             job?.error?h("p",{className:"pl-error",style:{marginTop:12}},job.error):null,
+            job?.result?.kind==='examples'?h("p",{className:"pl-notice"},job.result.warning+"。已保存："+job.result.suite.name+"，可在下方审核。"):null,
             candidate?h(React.Fragment,null,
               h("h3",{style:{marginTop:18}},candidate.content.name),h("p",{className:"pl-studio-note"},"来源："+candidate.sources.label+" · 配置版本 "+candidate.base.profileVersion+" · AI 建议，尚未验证效果"),
               h("details",{className:"pl-details pl-studio-inputs"},h("summary",null,"本次实际使用的输入与来源"),h("div",{className:"pl-details-content"},
                 h("h4",null,"需求 / 反馈"),h("pre",{className:"pl-pre"},job.input.goal||"（空）"),
                 job.input.materials?h(React.Fragment,null,h("h4",null,job.input.sourceLabel),h("pre",{className:"pl-pre"},job.input.materials)):null,
+                candidate.sources.selectedSession?h(React.Fragment,null,h("h4",null,"明确选定的会话消息"),h("pre",{className:"pl-pre"},JSON.stringify(candidate.sources.selectedSession,null,2))):null,
                 original?h(React.Fragment,null,h("h4",null,"带入的原稿 · 版本 "+original.version),h("pre",{className:"pl-pre"},[original.prompt,original.rules].filter(Boolean).join("\n\n"))):h("p",{className:"pl-studio-note"},"本次未带入当前草稿。"),
                 job.input.previousCandidate?h("p",{className:"pl-studio-note"},"带入前一候选："+job.input.previousCandidate.name):null,
                 ...(job.input.sourceRules||[]).map(r=>h("details",{className:"pl-details",key:r.id},h("summary",null,r.name+" · 版本 "+r.version),h("pre",{className:"pl-pre"},r.text))))),
@@ -476,17 +623,18 @@ window.__ModuleLoader__.load({
               list("实质修改",candidate.content.changes),list("待核实假设",candidate.content.assumptions),list("待补充项",candidate.content.questions),
               candidate.content.ruleSuggestions.length?h("h4",null,"规则建议 · 勾选后采用"):null,
               ...candidate.content.ruleSuggestions.map((r,i)=>h("div",{className:"pl-candidate-rule",key:i},
-                h("label",null,h("input",{type:"checkbox","aria-label":"采用规则 "+r.name,checked:indices.includes(i),disabled:busy||!!applied,onChange:e=>setIndices(list=>e.target.checked?[...list,i]:list.filter(v=>v!==i))}),r.name),
+                h("label",null,h("input",{type:"checkbox","aria-label":"采用规则 "+r.name,checked:indices.includes(i),disabled:busy||!!applied||candidate.operation==='optimize',onChange:e=>{const next=e.target.checked?[...indices,i]:indices.filter(v=>v!==i);setIndices(next);if(seed?.id===job.id)setSeedIndices(next);}}),r.name),
                 h("p",null,({create:"新建",reuse:"引用已有",copy:"复制后修改"}[r.action])+" · "+r.scope+(r.existingEnabled===false?" · 原规则已停用":"")),h("pre",{className:"pl-pre"},r.text),
-                r.reason?h("p",null,"建议理由："+r.reason):null,r.source?h("p",null,"模型提取依据（未验证）："+r.source):null,r.conflict?h("p",null,"重复/冲突："+r.conflict):null)),
+                r.reason?h("p",null,"建议理由："+r.reason):null,r.source?h("p",null,"模型提取依据（未验证）："+r.source):null,r.conflict?h("p",null,"重复/冲突："+r.conflict):null,r.replacesRuleIds?.length?h("p",null,"仅在新方案中替换引用："+r.replacesRuleIds.map(id=>job.input.sourceRules.find(r=>r.id===id)?.name||id).join('、')):null)),
               applied?h("p",{className:"pl-notice",style:{marginTop:15}},"已保存。配置未自动启用，原配置及共享规则保持原样。",adopted?.studioWarning||""):null,
               h("div",{className:"pl-studio-buttons"},
-                candidate.operation!=="extract"?btn("另存为新方案",()=>adopt("profile"),"accent",busy||!!applied):btn("保存所选规则",()=>adopt("rules"),"accent",busy||!!applied||!indices.length),
+                candidate.content.prompt?btn("另存为新方案",()=>adopt("profile"),"accent",busy||!!applied):btn("保存所选规则",()=>adopt("rules"),"accent",busy||!!applied||!indices.length),
                 candidate.content.prompt?btn("仅替换正文与附加规则",()=>{if(onReplace(candidate))onClose();},"",busy||!!stale||!!applied):null,
                 adopted?.editedId?btn("打开新方案",()=>{if(onOpenProfile(adopted,adopted.editedId))onClose();},"",busy):null),
               h("p",{className:"pl-studio-note"},"保存新方案会一次提交勾选规则；替换草稿不会写入新共享规则。启用配置将对当前 DSH 后续组装统一生效。"),
               h("label",{className:"pl-field",htmlFor:"pl-ai-feedback"},"继续说说哪里需要改"),h("textarea",{id:"pl-ai-feedback",className:"pl-textarea","aria-label":"候选修改反馈",maxLength:6000,value:feedback,onChange:e=>setFeedback(e.target.value),placeholder:"例如：更短一些，保留验证要求。"}),
-              h("div",{className:"pl-studio-buttons"},btn("按反馈再改一版",()=>start(true),"",busy||running||!feedback.trim()||!candidate.content.prompt))):null)))));
+              h("div",{className:"pl-studio-buttons"},btn("按反馈再改一版",()=>start(true),"",busy||running||!feedback.trim()))):null)),
+          h(ExperimentResults,{job}),h(ExperimentPanel,{seed,indices:seed?.id===job?.id?indices:seedIndices,activeJob:job,route,cap,disabled:busy||running,onStart:startExperiment}))));
     }
     let retainedDraft = null;
     function Panel() {
@@ -511,6 +659,7 @@ window.__ModuleLoader__.load({
       const [manageOpen, setManageOpen] = useState(false);
       const [profileQuery, setProfileQuery] = useState("");
       const [studioOptions,setStudioOptions] = useState(null);
+      const [versionsOpen,setVersionsOpen]=useState(false);
       const [, setEditorTick] = useState(0);
       const editor = useRef(retainedDraft ? { ...retainedDraft } : {
         id: "", prompt: "", rules: "", savedPrompt: "", savedRules: "", version: 1,
@@ -743,6 +892,7 @@ window.__ModuleLoader__.load({
           error ? h("div", { className: "pl-error", role: "alert" }, "请求失败：" + error) : null,
           !data ? h("div", { className: "pl-empty", role: "status" }, "正在加载本地配置…") : null,
           data?.storage?.error ? h("p", { className: "pl-error", role: "alert" }, data.storage.error) : null,
+          data?.historyWarning?h("p",{className:"pl-notice",role:"status"},data.historyWarning):null,
           data && !st.observerRegistered ? h("p", { className: "pl-notice" }, "组装观察尚未就绪，请确认插件已启用。配置仍可编辑。") : null,
           tab === "profile" && data ? h(React.Fragment, null,
             h("div", { className: "pl-page-heading" }, h("div", null, h("h1", null, "提示词配置"), h("p", null, "为不同任务保存配置，自由组合正文与规则。")),
@@ -775,6 +925,7 @@ window.__ModuleLoader__.load({
                             btn("重命名", () => mutate("rename", { name: nameInput }), "", saving || !nameInput.trim()),
                             btn("复制已保存配置", () => mutate("duplicate", nameInput.trim() ? { name: nameInput } : {}), "", saving || !editId),
                             btn("导出此配置", () => downloadBundle("profile", editId).catch(e => setError(e.message)), "", saving || !editId),
+                            btn("版本记录与恢复",()=>{setManageOpen(false);setVersionsOpen(true);},"",saving),
                             btn("删除配置", deleteProfile, "danger", saving || data.profiles.length <= 1))) : null))),
                   h("div", { className: "pl-editor-content" },
                   h("div", { className: "pl-editor-section" },
@@ -805,7 +956,7 @@ window.__ModuleLoader__.load({
                   h("details", { className: "pl-details" }, h("summary", null, "预览编辑器当前的完整提示词"), h("pre", { className: "pl-pre" }, profileText)),
                   h("details", { className: "pl-details" }, h("summary", null, `已保存的当前配置预览 · 版本 ${data.configRevision}`), h("pre", { className: "pl-pre" }, data.configuredPrompt || "（空）")),
                   h("details", { className: "pl-details" }, h("summary", null, data.evaluation ? `最近一次 text() 求值 · ${data.evaluation.section || "combined"} · ${data.evaluation.evaluatedAt}${data.evaluation.stale ? " · 配置已变化" : ""}` : "最近一次 text() 求值：尚未观察到"), h("pre", { className: "pl-pre" }, data.evaluation?.text || "（空或尚未求值；不代表模型已接收）")))))) : null,
-          tab === "rules" && data ? h(RuleManager, { data, onCommitted: acceptData, onAI:ids=>openStudio("extract",ids) }) : null,
+          tab === "rules" && data ? h(RuleManager, { data, onCommitted: acceptData, onAI:(ids,operation='extract')=>openStudio(operation,ids) }) : null,
           tab === "transfer" && data ? h(TransferPanel, { data, onCommitted: acceptData }) : null,
           tab === "settings" && data ? h(React.Fragment, null,
             h("div", { className: "pl-page-heading" }, h("div", null, h("h1", null, "设置"), h("p", null, "控制环境信息的提供方式，并按需启用渠道兼容。"))),
@@ -856,9 +1007,10 @@ window.__ModuleLoader__.load({
                     h("div", { className: "pl-diagnostic-row" }, h("span", null, "本次上下文过滤"), h("span", null,
                       ({ off: "原样保留", strip: "整组移除", redact: "隐藏具体值" }[assembly.contextFilter] || "未知") + ` · 去除 ${assembly.contextsRemoved || 0} 条 · 剩余 ${assembly.contextCount || 0} 条`)),
                     h("div", { className: "pl-diagnostic-row" }, h("span", null, "本次身份句处理"), h("span", null, `命中 ${assembly.identityBroken || 0} 个段/条目（零命中不代表开关关闭）`))) : null)))) : null)),
-        h("footer", { className: "pl-foot" }, h("span", null, "本地配置 · " + (activeProfile?.name || "正在连接")), h("span", null, "v" + (data?.version || "0.6.0") + (data ? " · 更新于 " + timeText(data.generatedAt) : ""))),
+        h("footer", { className: "pl-foot" }, h("span", null, "本地配置 · " + (activeProfile?.name || "正在连接")), h("span", null, "v" + (data?.version || "0.6.2") + (data ? " · 更新于 " + timeText(data.generatedAt) : ""))),
         studioOptions&&data?h(StudioPanel,{initialOperation:studioOptions.operation,sourceRuleIds:studioOptions.sourceRuleIds,getContext:studioContext,onCommitted:acceptData,
-          onOpenProfile:openStudioProfile,onReplace:replaceFromCandidate,onClose:()=>setStudioOptions(null)}):null);
+          onOpenProfile:openStudioProfile,onReplace:replaceFromCandidate,onClose:()=>setStudioOptions(null)}):null,
+        versionsOpen&&data?h(VersionPanel,{data,profileId:editId,onCommitted:acceptData,onOpenProfile:openStudioProfile,onClose:()=>setVersionsOpen(false)}):null);
 
       // 宿主把本组件渲染在 conversation.view 的视图区里（.viewArea 是 flex:1 的纵向容器），
       // 这里只负责填满它：显示 / 隐藏由宿主的页签切换决定，组件自己不判断是否可见。

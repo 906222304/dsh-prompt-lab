@@ -1,6 +1,6 @@
 {
   "name": "dsh-prompt-lab",
-  "version": "0.6.0",
+  "version": "0.6.2",
   "description": "提示词（Prompt Lab）：DeepSeek Harness 的 AI 提示词创作与共享规则管理面板，支持生成、改写、提取规则和注入诊断",
   "type": "module",
   "main": "lib/index.js",
@@ -24,7 +24,8 @@
     "docs/release-0.5.4.md",
     "docs/settings-guide.zh-CN.md",
     "docs/ai-studio.zh-CN.md",
-    "docs/release-0.6.0.md"
+    "docs/release-0.6.0.md",
+    "docs/release-0.6.2.md"
   ],
   "keywords": [
     "dsh",
@@ -53,10 +54,11 @@
   "scripts": {
     "check": "node scripts/check.cjs",
     "test": "node --test tests/*.test.mjs",
-    "test:plain": "node tests/plugin.test.mjs && node tests/stability.test.mjs && node tests/client.test.mjs && node tests/management.test.mjs && node tests/studio.test.mjs && node tests/studio-foundations.test.mjs",
+    "test:plain": "node tests/plugin.test.mjs && node tests/stability.test.mjs && node tests/client.test.mjs && node tests/management.test.mjs && node tests/studio.test.mjs && node tests/studio-foundations.test.mjs && node tests/experiments.test.mjs",
     "test:host": "node scripts/host-smoke.cjs",
     "test:browser": "node scripts/browser-smoke.cjs",
     "test:rollback": "node scripts/rollback-smoke.cjs",
+    "test:package": "node scripts/package-smoke.cjs",
     "extract:purge-prompt": "node scripts/extract-dsh-purge-prompt.mjs"
   },
   "engines": {
