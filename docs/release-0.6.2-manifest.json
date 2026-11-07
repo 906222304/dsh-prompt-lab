@@ -1,17 +1,16 @@
 {
   "version": "0.6.2",
-  "status": "implementation-verified-awaiting-live-host",
+  "status": "released",
   "releaseDate": "2026-11-07",
   "timezone": "Asia/Hong_Kong",
-  "sourceTag": null,
-  "plannedSourceTag": "v0.6.2",
+  "sourceTag": "v0.6.2",
   "baselineTag": "v0.6.0",
   "baselineCommit": "2fc4b2d",
   "package": {
     "filename": "dsh-prompt-lab-0.6.2.tgz",
-    "bytes": 120373,
+    "bytes": 121270,
     "files": 31,
-    "sha256": "15562456DE37487E2DF8AD0FE0FA986F2CF030C6699A5DEB32DE9AE145D759DF",
+    "sha256": "C41F7F4858670A61C420B38F3F7A7BA42120D4D84225D77F6CF887490DD6C79F",
     "extractedArchiveRuntimePassed": true,
     "extractedOptimizationAndAdoptionPassed": true,
     "extractedRevisionRestorePassed": true,
@@ -19,11 +18,22 @@
   },
   "verification": {
     "syntaxFiles": 29,
-    "nodeTests": { "passed": 112, "failed": 0, "skipped": 0 },
+    "nodeTests": {
+      "passed": 113,
+      "failed": 0,
+      "skipped": 0
+    },
     "plainTestEntryPassed": true,
     "chromiumReactDOMPassed": true,
-    "viewportWidths": [1200, 520, 360],
-    "themes": ["light", "dark"],
+    "viewportWidths": [
+      1200,
+      520,
+      360
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
     "aiFixtureCalls": 22,
     "keyboardFocusAndEscapePassed": true,
     "suiteGenerationAndEvaluationPassed": true,
@@ -46,12 +56,495 @@
     "live": {
       "workspaceJunctionVerified": true,
       "desktopBundleAndDependencyVerified": true,
-      "fresh062StudioInstanceVerified": false,
-      "liveClientSourceMatched": false,
-      "real062ModelVerified": false,
+      "fresh062StudioInstanceVerified": true,
+      "liveClientSourceMatched": true,
+      "real062ModelVerified": true,
       "nativeDesktopUIVerified": false,
-      "pendingReason": "Old HTTP API port is unavailable; the confirmed current DSH listener does not serve this HTTP API. Windows computer-use initialization failed after reset/retry. Awaiting current desktop state from the user."
-    }
+      "nativeAutomationLimitation": "Windows computer-use helper initialization failed. Chromium/React interactions, native host isolation and current host API/model verification were performed separately.",
+      "clientProof": {
+        "ok": true,
+        "version": "0.6.2",
+        "clientRevision": "9d918cb34483",
+        "clientSourceMatched": true,
+        "profileCount": 3,
+        "ruleSetCount": 0,
+        "incrementalResponseBytes": 42,
+        "exportPassed": true,
+        "importPreviewPassed": true,
+        "previewDidNotChangeState": true
+      },
+      "registeredModelCount": 61,
+      "userDataFilesUnchanged": true,
+      "configuredPromptUnchanged": true,
+      "finalReloadAfterRecoveryHardening": true,
+      "profilePatchOriginalBytesRestored": true,
+      "recoveryProof": {
+        "ok": true,
+        "version": "0.6.2",
+        "verifiedAt": "2026-11-07T06:33:13.524Z",
+        "preparedCandidateInvalidated": true,
+        "incompleteWinInvalidated": true,
+        "redispatchedCalls": 0,
+        "originalAssetsUnchanged": true,
+        "backupDirectory": "C:\\Users\\yyyyyytd\\.dsh\\backups\\prompt-lab-0.6.2-1794033190925"
+      },
+      "backupDirectory": "C:\\Users\\yyyyyytd\\.dsh\\backups\\prompt-lab-0.6.2-1794033190925",
+      "rollbackPackageVersion": "0.6.0",
+      "finalReadOnlyAudit": {
+        "ok": true,
+        "version": "0.6.2",
+        "verifiedAt": "2026-11-07T06:36:46.545Z",
+        "profileCount": 3,
+        "ruleSetCount": 0,
+        "available": true,
+        "sessionReaderRegistered": true,
+        "modelCount": 61,
+        "historyCount": 0,
+        "suiteCount": 0,
+        "activeJobs": 0,
+        "dataAndProfileFilesMatchBackup": true,
+        "observerRegistered": true,
+        "storageError": null
+      }
+    },
+    "realProductionModel": {
+      "ok": true,
+      "version": "0.6.2",
+      "verifiedAt": "2026-11-07T06:19:58.855Z",
+      "realHostModel": true,
+      "sessionReaderRegistered": true,
+      "operations": [
+        {
+          "operation": "generate",
+          "status": "succeeded",
+          "route": {
+            "provider": "myapi",
+            "model": "workbuddy/cn:deepseek-v4.1-flash",
+            "reasoningEffort": "max"
+          },
+          "usage": {
+            "calls": 1,
+            "inputTokens": 820,
+            "outputTokens": 548,
+            "cost": null,
+            "inputBytes": 3438,
+            "reservedOutputTokens": 4000
+          },
+          "complete": null,
+          "accepted": null,
+          "retained": null,
+          "ruleSuggestions": 0,
+          "calls": [
+            {
+              "purpose": "prompt-lab-studio",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 4000
+              },
+              "latencyMs": 5070,
+              "usage": {
+                "inputTokens": 820,
+                "outputTokens": 548,
+                "cost": null
+              }
+            }
+          ]
+        },
+        {
+          "operation": "examples",
+          "status": "succeeded",
+          "route": {
+            "provider": "myapi",
+            "model": "workbuddy/cn:deepseek-v4.1-flash",
+            "reasoningEffort": "max"
+          },
+          "usage": {
+            "calls": 1,
+            "inputTokens": 346,
+            "outputTokens": 1852,
+            "cost": null,
+            "inputBytes": 1331,
+            "reservedOutputTokens": 4000
+          },
+          "complete": null,
+          "accepted": null,
+          "retained": null,
+          "ruleSuggestions": null,
+          "calls": [
+            {
+              "purpose": "prompt-lab-examples",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 4000
+              },
+              "latencyMs": 13396,
+              "usage": {
+                "inputTokens": 346,
+                "outputTokens": 1852,
+                "cost": null
+              }
+            }
+          ]
+        },
+        {
+          "operation": "evaluate",
+          "status": "succeeded",
+          "route": {
+            "provider": "myapi",
+            "model": "workbuddy/cn:deepseek-v4.1-flash",
+            "reasoningEffort": "max"
+          },
+          "usage": {
+            "calls": 6,
+            "inputTokens": 743,
+            "outputTokens": 1026,
+            "cost": null,
+            "inputBytes": 2310,
+            "reservedOutputTokens": 5496
+          },
+          "complete": true,
+          "accepted": true,
+          "retained": "candidate",
+          "ruleSuggestions": null,
+          "calls": [
+            {
+              "purpose": "prompt-lab-evaluation",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 1024
+              },
+              "latencyMs": 2419,
+              "usage": {
+                "inputTokens": 63,
+                "outputTokens": 195,
+                "cost": null
+              }
+            },
+            {
+              "purpose": "prompt-lab-evaluation",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 1024
+              },
+              "latencyMs": 1933,
+              "usage": {
+                "inputTokens": 124,
+                "outputTokens": 67,
+                "cost": null
+              }
+            },
+            {
+              "purpose": "prompt-lab-grading",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 700
+              },
+              "latencyMs": 3257,
+              "usage": {
+                "inputTokens": 184,
+                "outputTokens": 288,
+                "cost": null
+              }
+            },
+            {
+              "purpose": "prompt-lab-evaluation",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 1024
+              },
+              "latencyMs": 3065,
+              "usage": {
+                "inputTokens": 63,
+                "outputTokens": 239,
+                "cost": null
+              }
+            },
+            {
+              "purpose": "prompt-lab-evaluation",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 1024
+              },
+              "latencyMs": 1578,
+              "usage": {
+                "inputTokens": 124,
+                "outputTokens": 34,
+                "cost": null
+              }
+            },
+            {
+              "purpose": "prompt-lab-grading",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 700
+              },
+              "latencyMs": 2568,
+              "usage": {
+                "inputTokens": 185,
+                "outputTokens": 203,
+                "cost": null
+              }
+            }
+          ]
+        },
+        {
+          "operation": "optimize",
+          "status": "succeeded",
+          "route": {
+            "provider": "myapi",
+            "model": "workbuddy/cn:deepseek-v4.1-flash",
+            "reasoningEffort": "max"
+          },
+          "usage": {
+            "calls": 9,
+            "inputTokens": 1917,
+            "outputTokens": 2406,
+            "cost": null,
+            "inputBytes": 6553,
+            "reservedOutputTokens": 11220
+          },
+          "complete": true,
+          "accepted": true,
+          "retained": "candidate",
+          "ruleSuggestions": 0,
+          "calls": [
+            {
+              "purpose": "prompt-lab-evaluation",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 1024
+              },
+              "latencyMs": 3115,
+              "usage": {
+                "inputTokens": 63,
+                "outputTokens": 286,
+                "cost": null
+              }
+            },
+            {
+              "purpose": "prompt-lab-evaluation",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 1024
+              },
+              "latencyMs": 1323,
+              "usage": {
+                "inputTokens": 124,
+                "outputTokens": 78,
+                "cost": null
+              }
+            },
+            {
+              "purpose": "prompt-lab-grading",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 700
+              },
+              "latencyMs": 3232,
+              "usage": {
+                "inputTokens": 186,
+                "outputTokens": 258,
+                "cost": null
+              }
+            },
+            {
+              "purpose": "prompt-lab-optimization",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 4000
+              },
+              "latencyMs": 8441,
+              "usage": {
+                "inputTokens": 699,
+                "outputTokens": 1031,
+                "cost": null
+              }
+            },
+            {
+              "purpose": "prompt-lab-evaluation",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 1024
+              },
+              "latencyMs": 1892,
+              "usage": {
+                "inputTokens": 279,
+                "outputTokens": 71,
+                "cost": null
+              }
+            },
+            {
+              "purpose": "prompt-lab-grading",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 700
+              },
+              "latencyMs": 1993,
+              "usage": {
+                "inputTokens": 186,
+                "outputTokens": 161,
+                "cost": null
+              }
+            },
+            {
+              "purpose": "prompt-lab-evaluation",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 1024
+              },
+              "latencyMs": 2171,
+              "usage": {
+                "inputTokens": 63,
+                "outputTokens": 232,
+                "cost": null
+              }
+            },
+            {
+              "purpose": "prompt-lab-evaluation",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 1024
+              },
+              "latencyMs": 1927,
+              "usage": {
+                "inputTokens": 124,
+                "outputTokens": 25,
+                "cost": null
+              }
+            },
+            {
+              "purpose": "prompt-lab-grading",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 700
+              },
+              "latencyMs": 2721,
+              "usage": {
+                "inputTokens": 193,
+                "outputTokens": 264,
+                "cost": null
+              }
+            }
+          ]
+        },
+        {
+          "operation": "learn",
+          "status": "succeeded",
+          "route": {
+            "provider": "myapi",
+            "model": "workbuddy/cn:deepseek-v4.1-flash",
+            "reasoningEffort": "max"
+          },
+          "usage": {
+            "calls": 1,
+            "inputTokens": 728,
+            "outputTokens": 334,
+            "cost": null,
+            "inputBytes": 3074,
+            "reservedOutputTokens": 4000
+          },
+          "complete": null,
+          "accepted": null,
+          "retained": null,
+          "ruleSuggestions": 1,
+          "calls": [
+            {
+              "purpose": "prompt-lab-studio",
+              "route": {
+                "provider": "myapi",
+                "model": "workbuddy/cn:deepseek-v4.1-flash",
+                "reasoningEffort": "max"
+              },
+              "parameters": {
+                "maxTokens": 4000
+              },
+              "latencyMs": 3527,
+              "usage": {
+                "inputTokens": 728,
+                "outputTokens": 334,
+                "cost": null
+              }
+            }
+          ]
+        }
+      ],
+      "userDataFilesUnchanged": true,
+      "configuredPromptUnchanged": true,
+      "selectedUnchanged": true,
+      "profileCount": 3,
+      "ruleSetCount": 0,
+      "syntheticInputsOnly": true,
+      "adoptedIntoUserAssets": false
+    },
+    "backendReplacementRebuildPassed": true
   },
   "rollback": {
     "packageVersion": "0.6.0",
@@ -66,7 +559,8 @@
     "Browser model responses were fixtures; real native SessionQuery verification used synthetic messages in an isolated host.",
     "Text-only evaluation does not replay the complete DSH context, execute tools, or establish real Coding Agent task success.",
     "No new automatic per-project or per-session activation routing was introduced.",
-    "The implementation and archive are verified, but current desktop reload and real 0.6.2 model verification are not yet claimed.",
-    "No npm publication was performed."
+    "No npm publication was performed.",
+    "The initially unavailable API assessment was corrected by direct Node HTTP access to the confirmed current host port.",
+    "All five production model test jobs and the one owned test suite were removed; no test candidate was adopted into user assets."
   ]
 }

@@ -141,8 +141,9 @@ test('profile/rule limits reject the entire candidate without partial writes',as
 
 test('restart recovers unfinished tasks as interrupted without redispatch',async()=>{
   const finished=await done(engine.start(request()).id);const file=engine.jobFile(finished.id),record=JSON.parse(fs.readFileSync(file,'utf8'));
-  record.status='running';record.candidate=null;fs.writeFileSync(file,JSON.stringify(record));
-  const before=calls.length;engine=createEngine();assert.equal(engine.get(finished.id).status,'interrupted');assert.equal(calls.length,before);
+  record.status='running';record.input.operation='optimize';record.result={kind:'optimize',complete:true,accepted:true,retained:'candidate'};fs.writeFileSync(file,JSON.stringify(record));
+  const before=calls.length;engine=createEngine();const recovered=engine.get(finished.id);assert.equal(recovered.status,'interrupted');assert.equal(calls.length,before);
+  assert.equal(recovered.candidate,null);assert.equal(recovered.result.complete,false);assert.equal(recovered.result.accepted,false);assert.equal(recovered.result.retained,'baseline');
 });
 
 test('bounded history and clearing remove only owned job records and preserve assets',async()=>{

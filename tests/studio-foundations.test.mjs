@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {randomUUID} from 'node:crypto';
 import { initialize, resetForTests, snapshot, updateProfile, updateRule, restoreStudioRevision, maintainStudioRules, studioStorageDirectory } from '../lib/state.js';
 import { RevisionStore } from '../lib/studio/revisions.js';
 import { SuiteStore, checkOutput } from '../lib/studio/suites.js';
@@ -101,6 +102,20 @@ test('studio dispatch authenticates selected message content and strips client-s
     assert.equal(calls[0].selectedSession.events.length,1);assert.ok(!JSON.stringify(calls[0]).includes('未选消息'));assert.ok(!JSON.stringify(calls[0]).includes('伪造消息'));
     const second=await post({...base,requestId:'learn-manual-2',materials:'粘贴反馈'});await done(second.job.id);assert.equal(calls[1].selectedSession,null);
   }finally{stopReader();stop();}
+});
+
+test('replacing the model service rebuilds the task engine and recovers on-disk interruptions',async()=>{
+  const backend=()=>({defaultRoute:()=>({provider:'fixture',model:'model'}),providers:()=>[{id:'fixture'}],models:async()=>[{id:'model'}]});
+  const firstStop=registerBackend(backend());let secondStop;
+  try{
+    const first=await dispatchStudio({method:'GET'},new URLSearchParams());
+    const id='j-'+randomUUID(),file=path.join(studioStorageDirectory(),'studio/jobs',id+'.json');
+    atomicWrite(file,{version:1,id,status:'running',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),input:{operation:'optimize',goal:'synthetic interruption'},candidate:{content:{name:'unfinished'}},result:{complete:true,accepted:true,retained:'candidate'}});
+    secondStop=registerBackend(backend());
+    const second=await dispatchStudio({method:'GET'},new URLSearchParams());assert.notEqual(second.instanceId,first.instanceId);
+    const {job}=await dispatchStudio({method:'GET'},new URLSearchParams({kind:'job',id}));assert.equal(job.status,'interrupted');assert.equal(job.candidate,null);assert.equal(job.result.accepted,false);assert.equal(job.result.complete,false);
+    firstStop();assert.equal((await dispatchStudio({method:'GET'},new URLSearchParams())).available,true);
+  }finally{firstStop();secondStop?.();}
 });
 
 test('batch maintenance refuses deletion of a referenced rule without modifying assets', () => {

@@ -25,14 +25,33 @@
 
 ## 验证状态
 
-已完成 112 项 Node 测试、29 个 JavaScript 文件语法检查，以及真实 Chromium + React 18 DOM 流程。浏览器包含原配置/规则/导入导出回归，以及生成样例、试跑、优化、选消息反馈、AI 合并、版本另存恢复、未引用规则删除和原取消/故障流程，22 次夹具模型调用。1200/520/360px 明暗主题截图位于 `.scratch/browser-artifacts-0.6.2`。这不是原生 DSH 窗口点击或真实模型评分证据。
+已完成 113 项 Node 测试、29 个 JavaScript 文件语法检查，以及真实 Chromium + React 18 DOM 流程。浏览器包含原配置/规则/导入导出回归，以及生成样例、试跑、优化、选消息反馈、AI 合并、版本另存恢复、未引用规则删除和原取消/故障流程，22 次夹具模型调用。1200/520/360px 明暗主题截图位于 `.scratch/browser-artifacts-0.6.2`。这不是原生 DSH 窗口点击或真实模型评分证据。
 
 - 真实 DSH 0.2.2-rc.1 / Node 24.21.0 隔离联调通过：SystemPrompt 动态两段、规则顺序和开关、WebServer API/卸载、实际 SessionStore/SessionQuery 合成消息读取与推理排除、版本记录接口。
 - 原 0.4.9 包恢复迁移前备份通过；实际 0.6.2 tgz 解压后完成优化、采纳和版本恢复，实际 0.6.0 包读回新资产通过。`npm run test:package` 可重复执行。
-- 当前 desktop profile 的依赖仍是指向本工作区的 junction，并保留 `dsh-prompt-lab` bundle；包版本已为 0.6.2。
-- 当前运行实例的最终热加载和真实模型检查尚未完成：旧 HTTP 端口失效，已确认的新进程监听端口不提供该 HTTP API；桌面检查工具因 Windows 沙箱初始化权限错误退出，重置重试也失败。待用户确认桌面状态后继续；不据链接存在声称已加载成功。未改动原用户配置、设置或 profile patch。
+- 当前 desktop profile 通过工作区 junction 加载最终 0.6.2；AI 实例标识已更新，模型目录 61 个，观察注册和存储正常。
+- 当前 API 端口 `60403`，直接 Node HTTP 请求通过。先前 PowerShell 请求重置导致的端口误判已纠正。前端 revision `9d918cb34483` 对应完整当前 client.js；增量查询、导出、只读导入预览及无 UI 头拒绝验证通过。
+- 原有 3 套配置、0 套共享规则，profiles.json、settings.json 和提示词预览保持不变；真实模型验收还核对 studio/settings.json 未变化。profile patch 原字节已恢复，旧格式仍仅在内存兼容，用户首次保存才迁移。
+- 最终热加载前备份位于 `C:\Users\yyyyyytd\.dsh\backups\prompt-lab-0.6.2-1794033190925`，保留 profile manifest/patch、原配置/设置和 0.6.0 回滚包。
+- Windows 桌面自动化因沙箱初始化权限错误无法运行，因此没有声称原生窗口点击验收；真实 Chromium/React 交互、真实宿主隔离与生产 API/模型验收分别记录。
 
-安装包大小、SHA256、已通过项与待完成项见源码仓库的独立 `release-0.6.2-manifest.json`；该 manifest 不放入其校验的 npm 包。
+## 生产接口真实模型检查
+
+通过正式 `/prompt-lab/api/studio` 使用当前 DSH 配置的 `workbuddy/cn:deepseek-v4.1-flash`、reasoningEffort max，完成以下合成验收：
+
+| 操作 | 调用次数 | 输入 Token | 输出 Token | 结果 |
+| --- | --- | --- | --- | --- |
+| generate | 1 | 820 | 548 | 生成 JSON 格式候选 |
+| examples | 1 | 346 | 1852 | 生成可编辑训练/保留样例 |
+| evaluate | 6 | 743 | 1026 | 两版输出和盲序评分完整 |
+| optimize | 9 | 1917 | 2406 | 训练改写与最终保留核验完整，未超 12 次预算及 16000 输出预留 |
+| learn | 1 | 728 | 334 | 从合成纠正提取一条规则 |
+
+试跑采用一条训练、一条保留的 JSON 格式案例，属于探索性结果，不证明真实 Coding Agent 能力或统计提升。仅发送合成草稿、输入与反馈，没有发送原用户提示词或真实聊天，没有采用这些候选到用户资产。运行后只清理本次 5 条任务和 1 个测试集，配置、设置、全局启用项及组合预览保持不变。元数据证据位于 `.scratch/live-studio-0.6.2-proof.json`。
+
+最后补强中断边界：即使候选/完整评分已写入，但任务终态尚未提交，恢复时仍作废候选与胜出标记，不自动继续或采用；取消、异常同样保留原始比较证据并撤销可采用状态。模型服务替换时释放并重建任务引擎，避免继续保留旧引擎对象。已通过增强后的 113 项回归；真实宿主热加载合成中断记录后，候选/胜出标记作废且重新派发次数为零，测试记录已清理，证据位于 `.scratch/live-recovery-0.6.2-proof.json`。
+
+安装包大小、SHA256 和验证元数据见源码仓库的独立 `release-0.6.2-manifest.json`；该 manifest 不放入其校验的 npm 包。源码标签 `v0.6.2` 与 master 一并推送，未发布 npm。
 
 ## 数据与回滚
 
