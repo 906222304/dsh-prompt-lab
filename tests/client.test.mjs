@@ -72,6 +72,7 @@ function panelHarness() {
   });
   function render() {
     cursor = 0; pending = false; tree = Panel();
+    while(typeof tree?.type==='function')tree=tree.type(tree.props);
     const queued = effects; effects = []; queued.forEach(run => run());
   }
   const api = {

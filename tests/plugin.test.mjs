@@ -432,8 +432,9 @@ test('frontend registers the conversation View tab with its options', () => {
   });
   /** 渲染插槽注册的渲染函数，返回它产出的元素树。 */
   const renderTree = (component) => {
-    const element = component();
-    return element.type(element.props);
+    let element = component();
+    while (typeof element.type === "function") element = element.type(element.props);
+    return element;
   };
   /** 收集树中所有满足条件的元素。 */
   const collect = (node, match, out = []) => {

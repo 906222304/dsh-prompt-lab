@@ -236,3 +236,16 @@ test('normalized and exported data are copies with no mutable reference leaks', 
   assert.deepEqual(current('default').ruleIds,[r]); assert.notEqual(rule(r).usedBy[0].name,'mutated');
   assert.equal(normalizeStore(JSON.parse(fs.readFileSync(file))).schemaVersion,2);
 });
+
+
+test('full asset HTTP import preserves activation, records a revision and restores interrupted graph before reads',async()=>{
+ const {exportAssetPackage,previewAssetImport,importAssetPackage}=await import('../lib/studio/asset-package.js');
+ const state=await import('../lib/state.js'),directory=state.studioStorageDirectory(),before=snapshot();
+ // Persist once so the transaction verifies a real original core file.
+ saveProfile(before.profiles[0].id);const original=snapshot(),bundle=exportAssetPackage(directory,original,{suites:false,scenarios:false,bindingHints:false});
+ const preview=await post({action:'assets.preview',bundle},'/prompt-lab/api/assets');assert.equal(preview.status,200);assert.equal(snapshot().profiles.length,original.profiles.length);
+ const commit=await post({action:'assets.commit',bundle,token:preview.body.token},'/prompt-lab/api/assets');assert.equal(commit.status,200);assert.equal(commit.body.profiles.length,original.profiles.length*2);assert.equal(commit.body.selected,original.selected);assert.equal(commit.body.receipt.activated,false);
+ const retry=await post({action:'assets.commit',bundle,token:preview.body.token},'/prompt-lab/api/assets');assert.equal(retry.status,200);assert.equal(retry.body.receipt.alreadyApplied,true);
+ const p=previewAssetImport(directory,snapshot(),bundle);assert.throws(()=>importAssetPackage(directory,snapshot(),bundle,p.token,{faultAfter:1}),e=>e.statusCode===503);
+ state.ensureInitialized();assert.equal(snapshot().profiles.length,original.profiles.length*3);assert.equal(snapshot().selected,original.selected);assert.ok(importAssetPackage(directory,snapshot(),bundle,p.token).alreadyApplied);
+});

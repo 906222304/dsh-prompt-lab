@@ -1,0 +1,47 @@
+import test,{after} from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';
+import * as state from '../lib/state.js';import {atomicWrite} from '../lib/store.js';import {inputDigest} from '../lib/studio/contracts.js';import {SuiteStore} from '../lib/studio/suites.js';import {ScenarioStore} from '../lib/studio/scenarios.js';
+import {exportAssetPackage,previewAssetImport,importAssetPackage,importedAssetRecords} from '../lib/studio/asset-package.js';import {recoverAssetImports} from '../lib/studio/asset-journal.js';
+const root=fs.mkdtempSync(path.join(os.tmpdir(),'pl-asset-package-')),prior=process.env.DSH_HOME;
+after(()=>{if(prior===undefined)delete process.env.DSH_HOME;else process.env.DSH_HOME=prior;assert.equal(path.dirname(root),os.tmpdir());fs.rmSync(root,{recursive:true,force:true});});
+const boot=name=>{process.env.DSH_HOME=path.join(root,name);state.resetForTests();state.initialize();return state.studioStorageDirectory();};
+let bundle,fullBundle;
+test('portable graph closes frozen dependencies and excludes optional source/response text by default',()=>{const dir=boot('source'),rid=state.updateRule({action:'create',name:'Old shared',text:'old shared content'}).editedRuleId;
+ let p=state.snapshot().profiles[0];state.updateProfile({action:'save',...p,ruleIds:[rid],expectedVersion:p.version});p=state.snapshot().profiles[0];
+ const events=[{seq:1,role:'user',text:'Test JSON input'},{seq:2,role:'assistant',text:'RAW_ASSISTANT_OUTPUT'}].map(e=>({...e,hash:inputDigest(e.text),truncated:false}));
+ const suite=new SuiteStore(dir).save({name:'Failure suite',cases:[{id:'f',split:'train',input:events[0].text,checks:[{type:'isJson'}],source:{kind:'selected-session-failure',sessionId:'source-native-session',capturedThroughSeq:2,events,inputHash:inputDigest(events[0].text),failureOutput:events[1].text,correction:'Return JSON',confidence:'claimed',authority:'operator-input',confirmed:true}}]}).suite;
+ const route={provider:'model-reference',model:'model'},scene=new ScenarioStore(dir).save({name:'Frozen scene',profileId:p.id,profileVersion:p.version,draft:p,route,targetRoute:route,judgeRoute:route,suiteId:suite.id,suiteRevision:suite.revision,commonContext:'Shared background',budget:{maxCalls:8}},state.snapshot(),new SuiteStore(dir)).scenario;
+ const pin=state.previewSessionBinding({profileId:p.id},{sessionId:'source-native-session',workspace:'D:/project'});state.updateSessionBinding({action:'binding.save',sessionId:'source-native-session',profileId:p.id,hash:pin.draft.hash,expectedRevision:pin.revision,confirm:true},{sessionId:'source-native-session',workspace:'D:/project'});
+ const rule=state.snapshot().ruleSets.find(r=>r.id===rid);state.updateRule({action:'save',...rule,text:'new shared content',expectedVersion:rule.version});
+ const job={version:1,id:'j-'+randomUUID(),status:'succeeded',createdAt:new Date().toISOString(),route:{...route,apiKey:'HOST_KEY_MUST_NOT_EXPORT'},input:{operation:'extract',goal:'Example',materials:'RAW_JOB_MATERIAL'},candidate:{content:{name:'Job candidate'}},usage:{calls:1},result:null};atomicWrite(path.join(dir,'studio/jobs',job.id+'.json'),job);
+ bundle=exportAssetPackage(dir,state.snapshot());assert.equal(bundle.graph.profiles.length,4,'current and frozen rule versions remain distinct dependency graphs');assert.equal(bundle.graph.rules.length,2);assert.ok(!JSON.stringify(bundle).includes('RAW_ASSISTANT_OUTPUT'));assert.ok(!JSON.stringify(bundle).includes('RAW_JOB_MATERIAL'));assert.equal(bundle.graph.evidence.length,0);assert.equal(bundle.graph.suites[0].asset.version,3);
+ fullBundle=exportAssetPackage(dir,state.snapshot(),{evidence:true});assert.ok(JSON.stringify(fullBundle).includes('RAW_ASSISTANT_OUTPUT'));assert.ok(JSON.stringify(fullBundle).includes('RAW_JOB_MATERIAL'));assert.ok(!JSON.stringify(fullBundle).includes('HOST_KEY_MUST_NOT_EXPORT'));assert.equal(fullBundle.graph.evidence.length,1);assert.equal(fullBundle.graph.bindingHints.length,1);
+});
+test('complete import appends remapped assets, preserves scope, opens frozen scenes, and never activates imported bindings',()=>{const dir=boot('destination'),before=state.snapshot(),preview=previewAssetImport(dir,before,bundle);assert.equal(preview.preview.bindingHintsInactive,true);assert.equal(fs.existsSync(path.join(dir,'profiles.json')),false,'preview writes no asset files');
+ const result=importAssetPackage(dir,before,bundle,preview.token);state.initialize();const after=state.snapshot();assert.equal(after.selected,before.selected);assert.equal(after.profiles.length,before.profiles.length+bundle.graph.profiles.length);assert.equal(after.sessionBindings.bindings.length,0);assert.ok(!fs.existsSync(path.join(dir,'studio/bindings.json')));
+ const suites=new SuiteStore(dir),imported=suites.get(result.suiteIds[0]);assert.equal(imported.validationUses,1);assert.equal(imported.cases[0].source.kind,'imported-failure-summary');assert.throws(()=>suites.save({...imported,expectedRevision:imported.revision,cases:imported.cases.map(c=>({...c,split:'validation'}))}),/只能作为训练/);
+ const scene=new ScenarioStore(dir).preview(result.scenarioIds[0],after,suites);assert.equal(scene.canApply,true,scene.reason);assert.ok(scene.scenario.data.ruleSets.some(r=>r.text==='old shared content'));assert.equal(importedAssetRecords(dir).bindingHints.length,1);assert.equal(importedAssetRecords(dir).evidence.length,0);
+ assert.equal(importAssetPackage(dir,after,bundle,preview.token).alreadyApplied,true);assert.equal(state.snapshot().profiles.length,after.profiles.length);
+});
+test('asset import detects tampering and destination changes, and recovers interrupted graph installation',()=>{const dir=boot('failure'),before=state.snapshot(),preview=previewAssetImport(dir,before,fullBundle);
+ const tampered=structuredClone(fullBundle);tampered.graph.profiles[0].asset.prompt='TAMPER';assert.throws(()=>importAssetPackage(dir,before,tampered,preview.token),/校验值/);
+ assert.throws(()=>importAssetPackage(dir,before,fullBundle,preview.token,{faultAfter:1}),/模拟写盘/);assert.equal(recoverAssetImports(dir),1);state.initialize();assert.ok(state.snapshot().profiles.length>before.profiles.length);assert.equal(importAssetPackage(dir,state.snapshot(),fullBundle,preview.token).alreadyApplied,true);assert.equal(importedAssetRecords(dir).evidence.length,1);
+ const retryPreview=previewAssetImport(boot('changed'),state.snapshot(),bundle);const p=state.snapshot().profiles[0];state.updateProfile({action:'save',...p,prompt:'changed after preview',expectedVersion:p.version});assert.throws(()=>importAssetPackage(state.studioStorageDirectory(),state.snapshot(),bundle,retryPreview.token),e=>e.statusCode===409);
+});
+
+
+test('asset export and recovery reject linked owned directories before reading their content',()=>{
+ const dir=boot('linked'),outside=path.join(root,'external');fs.mkdirSync(outside);fs.writeFileSync(path.join(outside,'marker'),'preserve');fs.mkdirSync(path.join(dir,'studio'),{recursive:true});
+ for(const folder of ['imports','suites']){const link=path.join(dir,'studio',folder);fs.symlinkSync(outside,link,process.platform==='win32'?'junction':'dir');try{if(folder==='imports')assert.throws(()=>recoverAssetImports(dir),/经过链接/);else assert.throws(()=>exportAssetPackage(dir,state.snapshot()),/经过链接/);}finally{fs.unlinkSync(link);}assert.equal(fs.readFileSync(path.join(outside,'marker'),'utf8'),'preserve');}
+});
+
+
+test('full asset import rejects unreadable or externally changed core even before preview',()=>{
+ const dir=boot('core-guard'),p=state.snapshot().profiles[0];state.updateProfile({action:'save',...p,prompt:'saved',expectedVersion:p.version});const before=state.snapshot(),core=path.join(dir,'profiles.json'),original=fs.readFileSync(core,'utf8');
+ fs.writeFileSync(core,'{broken');state.initialize();assert.throws(()=>previewAssetImport(dir,state.snapshot(),bundle),e=>e.statusCode===409);assert.equal(fs.readFileSync(core,'utf8'),'{broken');fs.writeFileSync(core,original);state.initialize();
+ const external=JSON.parse(original);external.profiles[0].prompt='EXTERNAL_NEW';fs.writeFileSync(core,JSON.stringify(external));assert.throws(()=>previewAssetImport(dir,state.snapshot(),bundle),e=>e.statusCode===409);assert.equal(JSON.parse(fs.readFileSync(core)).profiles[0].prompt,'EXTERNAL_NEW');
+});
+
+test('portable import preserves exact legacy bytes on first migration without writing during preview',()=>{
+ const dir=boot('legacy-import'),core=path.join(dir,'profiles.json'),legacy={selected:'legacy',profiles:[{id:'legacy',name:'Legacy',prompt:'original legacy text',rules:''}]},bytes=JSON.stringify(legacy,null,4)+'\n';fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(core,bytes);state.initialize();assert.equal(state.snapshot().storage.needsMigration,true);
+ const proposal=previewAssetImport(dir,state.snapshot(),bundle);assert.equal(fs.existsSync(path.join(dir,'backups')),false);importAssetPackage(dir,state.snapshot(),bundle,proposal.token);const backups=fs.readdirSync(path.join(dir,'backups'));assert.equal(backups.length,1);assert.equal(fs.readFileSync(path.join(dir,'backups',backups[0]),'utf8'),bytes);state.initialize();assert.equal(state.snapshot().selected,'legacy');assert.equal(state.snapshot().storage.needsMigration,false);assert.doesNotThrow(()=>previewAssetImport(dir,state.snapshot(),bundle),'already imported linked profiles can be previewed again');
+});

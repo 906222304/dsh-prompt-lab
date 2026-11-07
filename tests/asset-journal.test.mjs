@@ -1,0 +1,11 @@
+import test,{after} from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';
+import {atomicWrite,fileDigest} from '../lib/store.js';import {commitAssetImport,recoverAssetImports,digestJSON,assetImportReceipt} from '../lib/studio/asset-journal.js';
+const root=fs.mkdtempSync(path.join(os.tmpdir(),'pl-import-journal-'));after(()=>{assert.equal(path.dirname(root),os.tmpdir());fs.rmSync(root,{recursive:true,force:true});});
+test('interrupted asset import recovers all targets before reading and retry is idempotent',()=>{const home=path.join(root,'recover');fs.mkdirSync(home);atomicWrite(path.join(home,'profiles.json'),{version:1});const id=randomUUID(),newId='s-'+randomUUID();
+ const plan={id,bundleHash:'a'.repeat(64),files:[{path:'studio/suites/'+newId+'.json',data:{suite:'new'},beforeHash:null},{path:'profiles.json',data:{version:2},beforeHash:fileDigest(path.join(home,'profiles.json'))}],receipt:{suiteIds:[newId]}};
+ assert.throws(()=>commitAssetImport(home,plan,{faultAfter:1}),/模拟写盘/);assert.deepEqual(JSON.parse(fs.readFileSync(path.join(home,'profiles.json'))),{version:1});assert.equal(recoverAssetImports(home),1);assert.deepEqual(JSON.parse(fs.readFileSync(path.join(home,'profiles.json'))),{version:2});assert.equal(assetImportReceipt(home,id).phase,'committed');assert.equal(commitAssetImport(home,plan).alreadyApplied,true);
+});
+test('import journal refuses unexpected external edits and out-of-root paths',()=>{const home=path.join(root,'conflict');fs.mkdirSync(home);atomicWrite(path.join(home,'profiles.json'),{v:1});const plan={id:randomUUID(),bundleHash:'b'.repeat(64),files:[{path:'studio/suites/s-'+randomUUID()+'.json',data:{v:2},beforeHash:null},{path:'profiles.json',data:{v:2},beforeHash:fileDigest(path.join(home,'profiles.json'))}],receipt:{}};
+ assert.throws(()=>commitAssetImport(home,plan,{faultAfter:1}));atomicWrite(path.join(home,'profiles.json'),{v:'external'});assert.throws(()=>recoverAssetImports(home),/外部修改/);assert.equal(JSON.parse(fs.readFileSync(path.join(home,'profiles.json'))).v,'external');
+ assert.throws(()=>commitAssetImport(path.join(root,'bad'),{...plan,id:randomUUID(),files:[{path:'../outside.json',data:{},beforeHash:null}]}),/路径无效/);
+});

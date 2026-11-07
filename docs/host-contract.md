@@ -86,3 +86,12 @@ try {
 隔离联调使用真实 SessionStore、SessionQuery、assembleContextFor 和 SystemPrompt，验证绑定会话沿用冻结规则、另一会话使用全局新规则、重新加载后绑定保留、解除恢复；合成数据在临时 DSH_HOME，不加载用户聊天，不调用模型。SessionQuery 返回的合成会话 cwd 位于 header.meta.cwd，新 reader 同时兼容顶层 cwd。
 
 宿主指令文件发现与动态基线在 dsh-agent-instructions 插件内部，当前未采用可核对的公开已加载文件列表接口。因此提供显式目录有限扫描，并将宿主加载状态显示为未知。
+
+
+## 0.6.4 前端当前会话契约
+
+核对本机固定的 @deepseek-ai/dsh-client-ui-session/lib/client.js 与 ui-renderer/lib/client.js：session scope 的 materialize/resolve 提供 props.sessionId，renderer 的 standardProps 合并 scope props 后传入 conversation.view 注册函数。插件接收该参数并以目标 ID 重挂载 Panel；不读取最近组装作为身份。
+
+SessionQuery 的 header.meta.cwd/header.cwd 只能证明初始目录，不能证明会话内 cd 后的目录。读取当前会话元数据使用完整 listSessions 查找，手选菜单仍只列最近 60 个；范围卡不调用 readSurface，消息正文继续显式预览。
+
+浏览器验收用真实 React 将同一注册函数注入 A/B/空白 sessionId、快速切换并双面板挂载，检查缓存和迟到响应。真实宿主模块组装验收与活动实例 HTTP/资源验收见独立运行记录；原生 Windows 自动点击仍受桌面工具初始化故障限制。

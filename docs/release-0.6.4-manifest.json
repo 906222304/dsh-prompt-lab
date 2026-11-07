@@ -1,0 +1,159 @@
+{
+  "version": "0.6.4",
+  "status": "local-candidate",
+  "releaseDate": "2026-11-07",
+  "timezone": "Asia/Hong_Kong",
+  "baselineVersion": "0.6.3",
+  "baselineCommit": "13ed8cb9bfb647683a69c7dc4751231f818a3c98",
+  "sourceState": "uncommitted-worktree",
+  "recordScope": "Local verification snapshot before any commit/push. Git refs are authoritative for source publication.",
+  "package": {
+    "filename": "dsh-prompt-lab-0.6.4.tgz",
+    "bytes": 162131,
+    "files": 44,
+    "sha256": "71B6F3AE9BEB1FF455F9B2DAD9F619C18ECE2C02D90AC00F1EA110A8FC106920",
+    "allArchiveFilesMatchCurrentSource": true,
+    "privateAndTestMaterialsExcluded": true,
+    "archiveRuntime": {
+      "ok": true,
+      "version": "0.6.4",
+      "archiveRuntime": true,
+      "optimization": true,
+      "heldOutExcluded": true,
+      "adoption": true,
+      "restore": true,
+      "actual063ReadsCoreAssets": true,
+      "workspace": true,
+      "sessionPinReload": true,
+      "regressionV2": true,
+      "scenario": true,
+      "baselineKeepsPinAndV2RejectsV3": true,
+      "portableGraphRoundTrip": true,
+      "importRecoveryAndRetry": true,
+      "scenarioRefresh": true,
+      "fullBackupByteRestore": true
+    }
+  },
+  "verification": {
+    "syntaxFiles": 43,
+    "nodeTests": {
+      "passed": 139,
+      "failed": 0,
+      "skipped": 0
+    },
+    "plainTestsPassed": 139,
+    "chromiumReactDOM": {
+      "ok": true,
+      "version": "0.6.4",
+      "renderer": "Chromium + React 18 DOM",
+      "checks": [
+        "current-session A/B/blank identity, late metadata, two panels and scoped drafts/materials/jobs",
+        "complete asset preview/download/upload/append, inactive binding handoff and original JSON compatibility",
+        "stale scenario diff and save-as without calls or old score inheritance",
+        "existing profile/rule CRUD, conflict, import/export and draft recovery",
+        "responsive light/dark management and settings",
+        "AI generation, diff and atomic unactivated adoption",
+        "AI revise into draft then explicit save",
+        "AI rule extraction and selection adoption",
+        "AI examples, editable suite, two-version evaluation and bounded optimization",
+        "writer excludes held-out samples",
+        "explicit selected-session feedback provenance",
+        "rule curation and unused-rule pruning",
+        "full asset-version restore without activation",
+        "explicit project scan/selection, stale-file conflict before dispatch and frozen sources",
+        "failure conversation to reviewed training-only regression suite",
+        "session snapshot preview, pin and removal without global activation",
+        "layered provenance diagnostics with final-request boundary",
+        "scenario save/preview/load, source-version conflict and no automatic activation or model calls",
+        "late candidate never overwrites changed draft",
+        "close/reopen active AI task and cancellation",
+        "invalid output bounded repair and service unavailable",
+        "1200/520/360px light and dark AI drawer/evaluation"
+      ],
+      "aiFixtureCalls": 25,
+      "artifacts": "D:\\private\\github\\dsh\\plugin\\.scratch\\browser-artifacts-0.6.4"
+    },
+    "nativeIsolatedHost": {
+      "ok": true,
+      "hostVersion": "0.2.2-rc.1",
+      "node": "v24.21.0",
+      "checks": [
+        "dynamic two-section injection",
+        "saved profile",
+        "redact",
+        "session-associated observation and final-request evidence boundary",
+        "shared rules and independent switches",
+        "real WebServer API/export/import/disposal",
+        "studio offline isolation and disposal",
+        "real SessionStore/SessionQuery selected visible messages",
+        "asset version API",
+        "real assembleContextFor session isolation and frozen rules across reload",
+        "disabled injection with strip",
+        "dispose restores host"
+      ]
+    },
+    "representativeScreenshotsVisuallyReviewed": [
+      "0.6.4-assets-360.png",
+      "0.6.4-panel-light-1200.png"
+    ],
+    "gitDiffCheck": true
+  },
+  "runtimeBaseline": {
+    "version": "0.6.3",
+    "frozenArchiveSha256": "B1278C60622C35B851E59D4C1AC8F1E3A121357B99F7AFE5578EC69A55383EEF",
+    "actualBackendVerified": true,
+    "actualClientSourceMatched": true,
+    "manualReloadConfirmed": true,
+    "originalDataFilesHashMatched": 3,
+    "realAuxiliaryModelCalls": 3,
+    "operations": [
+      {
+        "operation": "extract",
+        "status": "succeeded",
+        "calls": 1,
+        "inputTokens": 1021,
+        "outputTokens": 582
+      },
+      {
+        "operation": "regression",
+        "status": "succeeded",
+        "calls": 1,
+        "inputTokens": 210,
+        "outputTokens": 1610
+      },
+      {
+        "operation": "cancel",
+        "status": "cancelled",
+        "calls": 1
+      }
+    ],
+    "nativeAssemblyReplicaVerified": true,
+    "liveAgentToolExecution": false,
+    "nativeWindowClicksVerified": false,
+    "desktopLimitation": "Windows computer-use helper sandbox initialization failed; no security setting changes or UI bypass used."
+  },
+  "publication": {
+    "committed": false,
+    "pushed": false,
+    "npmPublished": false,
+    "running064Replaced": false
+  },
+  "rollback": {
+    "baseline": "0.6.3",
+    "coreSchema": 2,
+    "olderSuites": [
+      1,
+      2
+    ],
+    "newSummarySuite": 3,
+    "baselineReadsV2AndExistingPins": true,
+    "baselineRejectsV3": true,
+    "fullDataBackupRestoreHashesMatched": true
+  },
+  "notes": [
+    "Portable asset imports append remapped IDs and never activate, bind or execute imported evidence.",
+    "Current workspace is session header metadata, not verified post-cd cwd.",
+    "Final model request and native Agent performance are not proven by scope previews or text trials.",
+    "Promptfoo integration is outside this version."
+  ]
+}

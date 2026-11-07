@@ -159,3 +159,30 @@ test('session selection excludes reasoning and tools and rejects changed selecte
     await assert.rejects(selectSessionSource(selection), e => e.statusCode === 409);
   } finally { dispose(); }
 });
+
+
+test('current-session metadata works beyond the recent list and scoped refinement rejects another session',async()=>{
+ const previews=[],calls=[],reader=hostSessionReader({listSessions:async()=>Array.from({length:70},(_,i)=>({header:{id:'s'+i,meta:{cwd:'D:/project-'+i}}})),readSurface:async id=>{previews.push(id);return {events:[],capturedThroughSeq:0};}}),stopReader=registerSessionReader(reader);
+ const route={provider:'fixture',model:'model'},stop=registerBackend({defaultRoute:()=>route,providers:()=>[{id:'fixture'}],models:async()=>[{id:'model'}],generate:async options=>{calls.push(options);return {route,text:JSON.stringify({name:'Scoped',prompt:'scoped prompt',rules:'',ruleSuggestions:[]})};}});
+ const post=body=>dispatchStudio({method:'POST'},new URLSearchParams(),body);
+ try{
+  assert.equal((await reader.list()).length,60);
+  const scope=await dispatchStudio({method:'GET'},new URLSearchParams({kind:'scope',id:'s69'}));assert.equal(scope.session.workspace,'D:/project-69');assert.equal(scope.mode,'global');assert.equal(scope.previewOnly,true);assert.equal(scope.workspaceCurrentVerified,false);assert.deepEqual(previews,[],'metadata banner does not read conversation messages');
+  const p=snapshot().profiles[0],base={action:'start',operation:'generate',goal:'scoped creation',profileId:p.id,profileVersion:p.version,targetSessionId:'s69'};
+  const first=(await post({...base,requestId:'scoped-first'})).job;
+  let job;for(let n=0;n<100;n++){job=(await dispatchStudio({method:'GET'},new URLSearchParams({kind:'job',id:first.id}))).job;if(!['queued','running'].includes(job.status))break;await new Promise(r=>setTimeout(r,3));}
+  assert.equal(job.status,'succeeded');assert.equal(job.candidate.base.targetSessionId,'s69');assert.equal(calls.length,1);
+  const caps=await dispatchStudio({method:'GET'},new URLSearchParams());assert.equal(caps.history[0].targetSessionId,'s69');
+  await assert.rejects(()=>post({...base,requestId:'cross-session',targetSessionId:'s1',sourceJobId:first.id}),e=>e.statusCode===409);assert.equal(calls.length,1);
+  await assert.rejects(()=>post({...base,operation:'evaluate',draft:p,requestId:'cross-evaluation',targetSessionId:'s1',candidateJobId:first.id}),e=>e.statusCode===409);assert.equal(calls.length,1);
+  await assert.rejects(()=>dispatchStudio({method:'GET'},new URLSearchParams({kind:'scope',id:'closed'})),e=>e.statusCode===404);
+ }finally{stopReader();stop();}
+});
+
+
+test('scene metadata exposes missing models and never loads an unavailable route or dispatches generation',async()=>{
+ const {ScenarioStore}=await import('../lib/studio/scenarios.js'),directory=studioStorageDirectory(),suites=new SuiteStore(directory),scenes=new ScenarioStore(directory),p=snapshot().profiles[0],route={provider:'fixture',model:'missing'},suite=suites.save({name:'model readiness',cases:[{id:'t',split:'train',input:'input',checks:[{type:'isJson'}]}]}).suite;
+ const scene=scenes.save({name:'Unready scene',profileId:p.id,profileVersion:p.version,draft:p,route,targetRoute:route,judgeRoute:route,suiteId:suite.id,suiteRevision:suite.revision,commonContext:'',budget:{}},snapshot(),suites).scenario;
+ let calls=0;const stop=registerBackend({defaultRoute:()=>route,providers:()=>[{id:'fixture'}],models:async()=>[{id:'another'}],generate:async()=>{calls++;throw Error('unexpected model dispatch');}});
+ try{const preview=await dispatchStudio({method:'GET'},new URLSearchParams({kind:'scenario',id:scene.id}));assert.equal(preview.canApply,false);assert.equal(preview.models[0].available,false);await assert.rejects(()=>dispatchStudio({method:'POST'},new URLSearchParams(),{action:'scenario.load',id:scene.id,hash:scene.hash}),e=>e.statusCode===409);assert.equal(calls,0);}finally{stop();}
+});
