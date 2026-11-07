@@ -1,0 +1,117 @@
+{
+  "version": "0.6.3",
+  "status": "local-candidate",
+  "releaseDate": "2026-11-07",
+  "timezone": "Asia/Hong_Kong",
+  "baselineVersion": "0.6.2",
+  "baselineCommit": "981128ca0bc189a2c9cb19a7f1b910c6894ae648",
+  "sourceState": "uncommitted-worktree",
+  "package": {
+    "filename": "dsh-prompt-lab-0.6.3.tgz",
+    "bytes": 141120,
+    "files": 39,
+    "sha256": "B1278C60622C35B851E59D4C1AC8F1E3A121357B99F7AFE5578EC69A55383EEF",
+    "allArchiveFilesMatchCurrentSource": true,
+    "privateAndTestMaterialsExcluded": true,
+    "archiveRuntime": {
+      "ok": true,
+      "version": "0.6.3",
+      "archiveRuntime": true,
+      "optimization": true,
+      "heldOutExcluded": true,
+      "adoption": true,
+      "restore": true,
+      "actual062ReadsCoreAssets": true,
+      "workspace": true,
+      "sessionPinReload": true,
+      "regressionV2": true,
+      "scenario": true,
+      "baselineIgnoresPinAndRejectsV2": true
+    }
+  },
+  "verification": {
+    "syntaxFiles": 39,
+    "nodeTests": {
+      "passed": 126,
+      "failed": 0,
+      "skipped": 0
+    },
+    "plainTestsPassed": 126,
+    "chromiumReactDOM": {
+      "ok": true,
+      "version": "0.6.3",
+      "renderer": "Chromium + React 18 DOM",
+      "checks": [
+        "existing profile/rule CRUD, conflict, import/export and draft recovery",
+        "responsive light/dark management and settings",
+        "AI generation, diff and atomic unactivated adoption",
+        "AI revise into draft then explicit save",
+        "AI rule extraction and selection adoption",
+        "AI examples, editable suite, two-version evaluation and bounded optimization",
+        "writer excludes held-out samples",
+        "explicit selected-session feedback provenance",
+        "rule curation and unused-rule pruning",
+        "full asset-version restore without activation",
+        "explicit project scan/selection, stale-file conflict before dispatch and frozen sources",
+        "failure conversation to reviewed training-only regression suite",
+        "session snapshot preview, pin and removal without global activation",
+        "layered provenance diagnostics with final-request boundary",
+        "scenario save/preview/load, source-version conflict and no automatic activation or model calls",
+        "late candidate never overwrites changed draft",
+        "close/reopen active AI task and cancellation",
+        "invalid output bounded repair and service unavailable",
+        "1200/520/360px light and dark AI drawer/evaluation"
+      ],
+      "aiFixtureCalls": 24,
+      "artifacts": "D:\\private\\github\\dsh\\plugin\\.scratch\\browser-artifacts-0.6.3"
+    },
+    "nativeHostIsolated": {
+      "ok": true,
+      "hostVersion": "0.2.2-rc.1",
+      "node": "v24.21.0",
+      "checks": [
+        "dynamic two-section injection",
+        "saved profile",
+        "redact",
+        "session-associated observation and final-request evidence boundary",
+        "shared rules and independent switches",
+        "real WebServer API/export/import/disposal",
+        "studio offline isolation and disposal",
+        "real SessionStore/SessionQuery selected visible messages",
+        "asset version API",
+        "real assembleContextFor session isolation and frozen rules across reload",
+        "disabled injection with strip",
+        "dispose restores host"
+      ]
+    },
+    "representativeScreenshotsVisuallyInspected": [
+      "regression-dark-360",
+      "regression-light-1200",
+      "bindings-360",
+      "scenario-360"
+    ],
+    "nativeWindowAutomation": false,
+    "newRealModelEvaluation": false,
+    "liveInstanceReloaded": false,
+    "oldLivePortProbe": {
+      "port": 60403,
+      "reachable": false,
+      "note": "Only the previously known API port was checked; this does not establish current desktop state."
+    }
+  },
+  "rollback": {
+    "coreSchemaVersion": 2,
+    "newFailureSuiteVersion": 2,
+    "baselineReadsCoreAssets": true,
+    "baselineIgnoresBindingsAndScenarios": true,
+    "baselineRejectsV2FailureSuites": true,
+    "currentVersionReopensNewData": true,
+    "backupScope": "entire prompt-lab data directory and host plugin profile"
+  },
+  "publication": {
+    "gitCommit": false,
+    "gitPush": false,
+    "npmPublished": false
+  },
+  "recordScope": "Pre-commit validation snapshot. sourceState and publication describe verification time; current source delivery is recorded by Git history and remote refs."
+}

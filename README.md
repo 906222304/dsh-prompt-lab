@@ -1,6 +1,6 @@
 # 提示词（dsh-prompt-lab）
 
-> 版本：**0.6.2**；中文名：**提示词**；英文代号 `Prompt Lab`；包名 `dsh-prompt-lab`；页签 id `prompt-lab`。
+> 版本：**0.6.3**；中文名：**提示词**；英文代号 `Prompt Lab`；包名 `dsh-prompt-lab`；页签 id `prompt-lab`。
 
 DSH（DeepSeek Harness）的提示词面板：在**会话页签**里编辑、保存、切换配置，查看已保存预览与最近一次 text() 求值，
 在「设置 → 诊断」中检查本插件注入与过滤结果，并可对轨迹里那段
@@ -14,6 +14,8 @@ DSH（DeepSeek Harness）的提示词面板：在**会话页签**里编辑、保
 入口为“AI 创作”“按反馈优化”“AI 整理规则”。详见 [AI 工作台指南](docs/ai-studio.zh-CN.md)。
 
 **试跑与反馈迭代**：AI 辅助生成测试样例，对比当前稿与候选的原始输出、检查和评分；有限预算内改写，仅将训练样例提供给改写模型，独立保留样例最后核验。支持明确选择会话消息学习、规则合并与修剪，以及完整资产快照恢复。文本试跑不执行工具，不代表真实 Coding Agent 能力验证。
+
+**项目与回归工作流（0.6.3）**：选择项目规范文件送入现有 AI 提取；分层核对注入来源与重复内容；将失败对话生成待确认训练样例；显式固定会话配置版本；保存和预览配置、模型、测试集与预算组成的场景。详见 [项目工作流指南](docs/project-workflows.zh-CN.md)。
 
 0.5.2 参考 [Magpie](https://github.com/yetone/magpie) 的桌面界面设计，使用低对比灰阶、分组卡片、
 配置列表与编辑器分栏。管理操作收进菜单，预览信息按需展开，支持明暗主题和窄屏布局。
@@ -52,8 +54,8 @@ DSH（DeepSeek Harness）的提示词面板：在**会话页签**里编辑、保
 | `POST /prompt-lab/api` | body `{action:"save",id,prompt,rules,expectedVersion:1}`、`{action:"activate",id}` 或 `{action:"settings.update",contextFilter:"off"\|"strip"\|"redact", identityBreak?:boolean}`，返回新快照 |
 | `GET /prompt-lab/api/export?kind=all\|profile\|rule&id=...` | 导出已保存配置和所需规则，不含快照、求值、设置或运行时路径 |
 | `POST /prompt-lab/api/import` | `{action:"preview",bundle}` 校验并预览；`{action:"commit",bundle,expectedStoreVersion}` 一次性追加导入 |
-| `GET /prompt-lab/api/studio` | 返回 AI 能力、模型目录与最近任务；kind 支持 job、suites、suite、versions、revision、rules-analysis、sessions、session |
-| `POST /prompt-lab/api/studio` | start/cancel/adopt/clear/remove，以及 suite.save/suite.remove、revision.restore、rules.maintain；沿用同源 UI 校验 |
+| `GET /prompt-lab/api/studio` | 返回 AI 能力、模型目录与最近任务；kind 支持 job、suites、suite、versions、revision、rules-analysis、sessions、session、scenarios、scenario |
+| `POST /prompt-lab/api/studio` | start/cancel/adopt/clear/remove，以及 suite.save/suite.remove、revision.restore、rules.maintain、workspace.scan/preview、binding.preview/save/remove、scenario.save/load/remove；沿用同源 UI 校验 |
 
 配置动作支持 `create/duplicate/rename/delete/save/activate`（也支持 `profile.` 前缀）；规则动作支持
 `rule.create/rule.duplicate/rule.rename/rule.delete/rule.save`。

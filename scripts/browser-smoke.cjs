@@ -46,11 +46,14 @@ async function main() {
   const ui=await import(pathToFileURL(path.join(project,'lib/ui.js')).href);
   const {registerBackend}=await import(pathToFileURL(path.join(project,'lib/studio/model.js')).href);
   const {registerSessionReader}=await import(pathToFileURL(path.join(project,'lib/studio/sessions.js')).href);
-  const withdrawSessions=registerSessionReader({list:async()=>[{id:'browser-feedback',title:'合成失败反馈',live:false}],preview:async id=>({sessionId:id,capturedThroughSeq:2,messages:[{seq:1,role:'user',text:'以后给出实际验证结果，不要只声称成功。',hash:'fixture-user-hash',truncated:false},{seq:2,role:'assistant',text:'未选中的助手内容',hash:'fixture-assistant-hash',truncated:false}]})});
+  const {inputDigest}=await import(pathToFileURL(path.join(project,'lib/studio/contracts.js')).href);
+  const workspace=path.join(working,'project');fs.mkdirSync(workspace);fs.writeFileSync(path.join(workspace,'AGENTS.md'),'Selected workspace requirements: verify changes.');fs.writeFileSync(path.join(workspace,'CLAUDE.md'),'UNSELECTED_WORKSPACE_POLICY');
+  const withdrawSessions=registerSessionReader({list:async()=>[{id:'browser-feedback',title:'合成失败反馈',workspace,live:false}],preview:async id=>{if(id==='slow-feedback')await delay(350);return ({sessionId:id,capturedThroughSeq:2,messages:[{seq:1,role:'user',text:'以后给出实际验证结果，不要只声称成功。',hash:inputDigest('以后给出实际验证结果，不要只声称成功。'),truncated:false},{seq:2,role:'assistant',text:'未选中的助手内容',hash:inputDigest('未选中的助手内容'),truncated:false}]});}});
   let studioMode='normal';const studioCalls=[];
   const withdrawStudio=registerBackend({defaultRoute:()=>({provider:'fixture',model:'browser-model'}),providers:()=>[{id:'fixture',name:'Browser fixture'}],models:async()=>[{id:'browser-model',name:'Browser model'}],
     async generate(options){
       studioCalls.push(options);
+      if(options.purpose==='prompt-lab-regression')return {text:JSON.stringify({name:'浏览器失败回归',cases:[{id:'failure-1',split:'train',input:'model input replaced by original',reference:'',checks:[],rubric:'回答须提供真实验证依据；没有外部证据应说明未验证。',threshold:0.7}]}),route:options.route};
       if(options.purpose==='prompt-lab-examples')return {text:JSON.stringify({name:'浏览器 AI 样例',cases:[{id:'train',split:'train',input:'TRAIN_BROWSER',checks:[{type:'equals',value:'PASS'}]},{id:'held',split:'validation',input:'HELD_BROWSER',checks:[{type:'equals',value:'PASS'}]}]}),route:options.route};
       if(options.purpose==='prompt-lab-evaluation')return {text:options.system.includes('维护项目时')||options.system.includes('优化后保证完成')?'PASS':'FAIL',route:options.route,usage:{inputTokens:50,outputTokens:1}};
       if(options.purpose==='prompt-lab-optimization')return {text:JSON.stringify({prompt:'优化后保证完成：先定位代码，执行验证并列出证据。',rules:'简洁汇报',changes:['依据训练失败补全验证']}),route:options.route};
@@ -355,13 +358,76 @@ plugin.apply({effect:fn=>fn(),slots:{inject(name,fn){fn()},register(options,rend
     await click('另存恢复方案');await wait(()=>state.snapshot().profiles.length===beforeRestore.profiles.length+1,'version restore copy');assert.equal(state.snapshot().selected,beforeRestore.selected);
     await click('关闭版本记录与恢复');await click('规则库');await click('去重与修剪');await click('选择未引用规则');
     const ruleCount=state.snapshot().ruleSets.length;await click('删除未引用规则');await wait(()=>state.snapshot().ruleSets.length<ruleCount,'unused rule pruning');await click('关闭规则去重与修剪');
+    await click('提示词与规则');await click('会话适用范围');
+    await select('[aria-label="绑定目标会话"]','browser-feedback');
+    await click('预览绑定快照');
+    for(const width of [1200,360]){await page.call('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});await next();const dialog=await page.evaluate(`(()=>{const e=document.querySelector('[aria-label="会话适用范围"]');return {width:e.scrollWidth,client:e.clientWidth}})()`);assert.ok(dialog.width<=dialog.client,'binding dialog no horizontal overflow');const shot=await page.call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifactDir,`${pluginVersion}-bindings-${width}.png`),Buffer.from(shot.data,'base64'));}
+    await page.call('Emulation.setDeviceMetricsOverride',{width:1200,height:1000,deviceScaleFactor:1,mobile:false});await click('确认仅绑定此会话');
+    await wait(()=>state.snapshot().sessionBindings.bindings.length===1,'session binding persisted');
+    assert.equal(state.snapshot().selected,beforeAI.selected,'binding does not change global selection');
+    const frozen=state.evaluate({agent:{session:{id:'browser-feedback'}}});assert.ok(frozen.length);
+    await click('解除绑定 browser-feedback');await wait(()=>state.snapshot().sessionBindings.bindings.length===0,'binding removed');
+    await click('关闭会话适用范围');await click('保存配置');await next();await click('AI 创作');
+    await fill('[aria-label="AI 创作需求"]','Read only my selected project policy.');
+    await fill('[aria-label="项目规范工作目录"]',workspace);await click('扫描规范文件');
+    await wait(async()=>(await text()).includes('2 个候选'),'workspace candidates');
+    const chooseProject=async()=>page.evaluate(`(()=>{const b=[...document.querySelectorAll('input[aria-label^="选择项目规范 "]')].find(e=>e.getAttribute('aria-label').endsWith('AGENTS.md'));b.closest('details').open=true;b.click();})()`);
+    await chooseProject();await click('预览所选完整正文');
+    await wait(async()=>(await text()).includes('已选正文 ·'),'workspace full text preview');
+    assert.ok(!(await text()).includes('UNSELECTED_WORKSPACE_POLICY'));
+    for(const width of [1200,360]){await page.call('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});await next();await page.evaluate(`document.querySelector('[aria-label="项目规范工作目录"]').scrollIntoView({block:'start'})`);assert.equal(await page.evaluate('document.querySelector(".pl-studio-body").scrollWidth<=document.querySelector(".pl-studio-body").clientWidth'),true,'workspace source no overflow');const shot=await page.call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifactDir,`${pluginVersion}-workspace-${width}.png`),Buffer.from(shot.data,'base64'));}
+    await page.call('Emulation.setDeviceMetricsOverride',{width:1200,height:1000,deviceScaleFactor:1,mobile:false});
+    fs.writeFileSync(path.join(workspace,'AGENTS.md'),'Changed selected policy: verify actual results.');
+    const beforeWorkspaceCalls=studioCalls.length;await click('生成候选');
+    await wait(async()=>(await text()).includes('所选项目文件已变化'),'workspace drift blocked');assert.equal(studioCalls.length,beforeWorkspaceCalls);
+    await click('扫描规范文件');await wait(()=>page.evaluate(`document.querySelectorAll('input[aria-label^="选择项目规范 "]').length===2`),'rescan');await chooseProject();await click('生成候选');
+    await wait(()=>studioCalls.length===beforeWorkspaceCalls+1,'workspace call dispatched');
+    await wait(()=>page.evaluate(`!document.querySelector('.pl-studio-status')?.textContent.includes('运行中')`),'workspace generation ended');
+    const selectedWorkspace=JSON.parse(studioCalls.at(-1).user).selectedData.selectedWorkspace;
+    assert.equal(selectedWorkspace.files.length,1);assert.ok(selectedWorkspace.files[0].text.includes('Changed selected policy'));assert.ok(!JSON.stringify(selectedWorkspace).includes('UNSELECTED_WORKSPACE_POLICY'));
+    await page.evaluate(`const d=[...document.querySelectorAll('details')].find(d=>d.firstElementChild?.textContent.includes('将失败对话加入回归集'));d.open=true;d.querySelector('details').open=true;`);
+    await click('读取会话列表');await select('[aria-label="反馈来源会话"]','browser-feedback');
+    await fill('[aria-label="反馈会话 ID"]','slow-feedback');await click('预览此会话');await fill('[aria-label="反馈会话 ID"]','browser-feedback');await click('预览此会话');
+    await delay(500);assert.ok(!(await text()).includes('会话 slow-feedback'),'late preview cannot replace the newer selected session');
+    await wait(()=>page.evaluate(`!!document.querySelector('[aria-label="选择反馈消息 2"]')`),'failure selection');
+    await page.evaluate(`document.querySelector('[aria-label="选择反馈消息 1"]').click();document.querySelector('[aria-label="选择反馈消息 2"]').click();`);
+    await fill('[aria-label="失败回归纠正意见"]','Require actual evidence. Unverified results must be marked.');
+    const {SuiteStore}=await import(pathToFileURL(path.join(project,'lib/studio/suites.js')).href),suiteStore=new SuiteStore(state.studioStorageDirectory()),suiteCount=suiteStore.list().suites.length;
+    await click('AI 起草失败回归样例');await wait(async()=>(await text()).includes('AI 回归草稿尚未保存'),'regression draft');
+    assert.equal(suiteStore.list().suites.length,suiteCount);await click('保存测试集');await wait(async()=>(await text()).includes('请先核对并确认'),'regression confirmation required');
+    await page.evaluate(`document.querySelector('[aria-label="确认失败来源与评分标准 0"]').click()`);await click('保存测试集');
+    await wait(()=>suiteStore.list().suites.length===suiteCount+1,'confirmed regression persisted');
+    const failureSuite=suiteStore.get(suiteStore.list().suites.find(v=>v.name==='浏览器失败回归').id);assert.equal(failureSuite.version,2);assert.equal(failureSuite.cases[0].source.events.length,2);assert.equal(failureSuite.cases[0].source.confidence,'claimed');
+    assert.equal(await page.evaluate(`document.querySelector('[aria-label="样例分组 0"]').disabled`),true,'failure case cannot become held-out');
+    await fill('[aria-label="场景方案名称"]','浏览器回归场景');const beforeScenarioCalls=studioCalls.length,beforeScenarioSelected=state.snapshot().selected;
+    await click('保存当前场景');await wait(async()=>(await text()).includes('来源版本匹配，可载入'),'scenario saved');await click('载入场景参数（不启用）');
+    await wait(async()=>(await text()).includes('已载入场景参数'),'scenario applied to editor only');assert.equal(studioCalls.length,beforeScenarioCalls);assert.equal(state.snapshot().selected,beforeScenarioSelected);
+    const {ScenarioStore}=await import(pathToFileURL(path.join(project,'lib/studio/scenarios.js')).href),scenarioStore=new ScenarioStore(state.studioStorageDirectory()),originalScenario=scenarioStore.get(scenarioStore.list().scenarios[0].id);
+    const custom=scenarioStore.save({name:'Custom budget fixture',profileId:originalScenario.data.profile.id,profileVersion:originalScenario.data.profile.version,draft:originalScenario.data.profile,route:originalScenario.data.route,targetRoute:originalScenario.data.targetRoute,judgeRoute:originalScenario.data.judgeRoute,suiteId:failureSuite.id,suiteRevision:failureSuite.revision,commonContext:'',budget:{maxCalls:8,maxRounds:1,maxOutputTotal:8000,maxInputTotal:43210,maxOutputTokens:512,timeoutMs:30000}},state.snapshot(),suiteStore).scenario;
+    await click('读取场景列表');await select('[aria-label="选择场景方案"]',custom.id);await click('载入场景参数（不启用）');await wait(async()=>(await text()).includes('已载入场景参数'),'custom budget scenario loaded');
+    const beforeResave=scenarioStore.list().scenarios.length;await click('保存当前场景');await wait(()=>scenarioStore.list().scenarios.length===beforeResave+1,'loaded budget resaved');const again=scenarioStore.get(scenarioStore.list().scenarios[0].id);assert.equal(again.data.budget.maxInputTotal,43210);assert.equal(again.data.budget.maxOutputTokens,512);assert.equal(again.data.budget.timeoutMs,30000);
+    for(const width of [1200,360]){await page.call('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});await next();await page.evaluate(`document.querySelector('[aria-label="场景方案名称"]').scrollIntoView({block:'start'})`);assert.equal(await page.evaluate('document.querySelector(".pl-studio-body").scrollWidth<=document.querySelector(".pl-studio-body").clientWidth'),true,'scenario no overflow');const shot=await page.call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifactDir,`${pluginVersion}-scenario-${width}.png`),Buffer.from(shot.data,'base64'));}
+    await page.call('Emulation.setDeviceMetricsOverride',{width:1200,height:1000,deviceScaleFactor:1,mobile:false});
+    suiteStore.save({...failureSuite,expectedRevision:failureSuite.revision,cases:failureSuite.cases.map(c=>({...c,reference:'Later changed reference'}))});
+    await click('载入场景参数（不启用）');await wait(async()=>(await text()).includes('原配置、共享规则或测试集已变化'),'stale scenario blocked');assert.equal(studioCalls.length,beforeScenarioCalls);await click('删除场景方案');
+    for(const theme of ['light','dark'])for(const width of [1200,520,360]){
+      await page.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:theme}]});await page.call('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:false});await next();
+      assert.equal(await page.evaluate('document.querySelector(".pl-studio-body").scrollWidth<=document.querySelector(".pl-studio-body").clientWidth'),true,'project/regression drawer no overflow');
+      await page.evaluate(`document.querySelector('[aria-label="试跑与迭代"]').scrollIntoView({block:'start'})`);
+      const shot=await page.call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(artifactDir,`${pluginVersion}-regression-${theme}-${width}.png`),Buffer.from(shot.data,'base64'));
+    }
+    await page.call('Emulation.setDeviceMetricsOverride',{width:1200,height:1000,deviceScaleFactor:1,mobile:false});await click('关闭 AI 创作');
+    await fetch(`http://127.0.0.1:${port}/qa/assemble`);await click('设置');
+    await page.evaluate(`document.querySelector('[aria-label="Prompt Lab 诊断"]').open=true`);
+    await wait(async()=>(await text()).includes('未取得模型 API 最终请求证据'),'diagnostic evidence boundary');
+    assert.ok((await text()).includes('当前全局配置来源与排除原因'));
     await click('提示词与规则');withdrawStudio();await click('AI 创作');
     await wait(async()=>(await text()).includes('AI 服务尚未就绪'),'AI offline state');
     assert.equal(await page.evaluate(`[...document.querySelectorAll('button')].find(b=>b.textContent==='生成候选').disabled`),true);
     await page.evaluate(`document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);await next();
     assert.equal(await page.evaluate('!!document.querySelector(".pl-studio")'),false,'Escape closes the dialog');assert.equal(state.snapshot().selected,beforeAI.selected);
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({ok:true,version:pluginVersion,renderer:'Chromium + React 18 DOM',checks:['existing profile/rule CRUD, conflict, import/export and draft recovery','responsive light/dark management and settings','AI generation, diff and atomic unactivated adoption','AI revise into draft then explicit save','AI rule extraction and selection adoption','AI examples, editable suite, two-version evaluation and bounded optimization','writer excludes held-out samples','explicit selected-session feedback provenance','rule curation and unused-rule pruning','full asset-version restore without activation','late candidate never overwrites changed draft','close/reopen active AI task and cancellation','invalid output bounded repair and service unavailable','1200/520/360px light and dark AI drawer/evaluation'],aiFixtureCalls:studioCalls.length,artifacts:artifactDir}));
+    console.log(JSON.stringify({ok:true,version:pluginVersion,renderer:'Chromium + React 18 DOM',checks:['existing profile/rule CRUD, conflict, import/export and draft recovery','responsive light/dark management and settings','AI generation, diff and atomic unactivated adoption','AI revise into draft then explicit save','AI rule extraction and selection adoption','AI examples, editable suite, two-version evaluation and bounded optimization','writer excludes held-out samples','explicit selected-session feedback provenance','rule curation and unused-rule pruning','full asset-version restore without activation','explicit project scan/selection, stale-file conflict before dispatch and frozen sources','failure conversation to reviewed training-only regression suite','session snapshot preview, pin and removal without global activation','layered provenance diagnostics with final-request boundary','scenario save/preview/load, source-version conflict and no automatic activation or model calls','late candidate never overwrites changed draft','close/reopen active AI task and cancellation','invalid output bounded repair and service unavailable','1200/520/360px light and dark AI drawer/evaluation'],aiFixtureCalls:studioCalls.length,artifacts:artifactDir}));
   } catch(error) {
     if(page){try{console.error('UI at failure: '+await page.evaluate('document.body.innerText'));}catch{}}
     throw error;

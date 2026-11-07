@@ -76,3 +76,13 @@ try {
 - 本机以外的宿主版本。
 
 这些验证不影响本地代码和安装包交付；上线发布前应完成目标桌面环境的操作验收。
+
+## 0.6.3 契约补充
+
+本机固定宿主的 `@deepseek-ai/dsh-agent/lib/index.js:407` 导出 `assembleContextFor(agent, signal)`，返回 `{agent, scope: agent, signal?}`；`dsh-agent-loop/lib/index.js:679` 用该上下文调用 systemPrompt.assemble。真实会话身份应从 `context.agent.session.id` 读取，不能只依赖顶层 sessionId。新实现兼容后者用于显式组装。
+
+最近观察可标记 session-assembly 与明确 sessionId，但不等于当前 UI 选中的会话或最终模型请求；没有身份时仍为 process。原第 6 项关于“不读取会话字段”的描述属于 0.5.1 历史基线。
+
+隔离联调使用真实 SessionStore、SessionQuery、assembleContextFor 和 SystemPrompt，验证绑定会话沿用冻结规则、另一会话使用全局新规则、重新加载后绑定保留、解除恢复；合成数据在临时 DSH_HOME，不加载用户聊天，不调用模型。SessionQuery 返回的合成会话 cwd 位于 header.meta.cwd，新 reader 同时兼容顶层 cwd。
+
+宿主指令文件发现与动态基线在 dsh-agent-instructions 插件内部，当前未采用可核对的公开已加载文件列表接口。因此提供显式目录有限扫描，并将宿主加载状态显示为未知。

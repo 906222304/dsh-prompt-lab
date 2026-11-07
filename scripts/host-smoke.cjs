@@ -43,7 +43,8 @@ async function main() {
     assert.equal(assembly.contexts[0].text.includes('D:\\smoke'), false);
     assert.equal(assembly.contexts[0].text.includes('Approval required.'), true);
     assert.equal(state.snapshot().assembly.stale, false);
-    assert.equal(state.snapshot().assembly.scope, 'process');
+    assert.equal(state.snapshot().assembly.scope, 'session-assembly');
+    assert.equal(state.snapshot().assembly.sessionId, 'smoke-b');
     const ruleId=state.updateRule({action:'rule.create',name:'shared smoke',text:'shared policy'}).editedRuleId;
     const p=state.snapshot().profiles.find(p=>p.id==='default');
     state.updateProfile({action:'save',...p,rules:'legacy policy',ruleIds:[ruleId],expectedVersion:p.version});
@@ -61,6 +62,22 @@ async function main() {
     feedback.append('assistant/message',{turn:0,step:0,stream:[],message:{id:'assistant-fixture',role:'assistant',source:{kind:'model',provider:'fixture',model:'fixture'},content:[{type:'reasoning',text:'private reasoning excluded'},{type:'text',text:'Visible answer only.'}]}},{surfaceOp:'append'});
     const reader=hostSessionReader(ctx.sessionQuery);assert.ok((await reader.list()).some(s=>s.id==='synthetic-feedback'));
     const feedbackPreview=await reader.preview('synthetic-feedback');assert.equal(feedbackPreview.messages.length,2);assert.equal(feedbackPreview.messages[1].text,'Visible answer only.');stopReader=registerSessionReader(reader);
+    assert.equal((await reader.list()).find(s=>s.id==='synthetic-feedback').workspace,temporary);
+    const {assembleContextFor}=fromHost('@deepseek-ai/dsh-agent');
+    const pin=state.previewSessionBinding({profileId:'default'},{sessionId:feedback.id,workspace:temporary});
+    state.updateSessionBinding({action:'binding.save',sessionId:feedback.id,profileId:'default',hash:pin.draft.hash,expectedRevision:pin.revision,confirm:true},{sessionId:feedback.id,workspace:temporary});
+    const oldShared=state.snapshot().ruleSets.find(r=>r.id===ruleId);
+    state.updateRule({action:'save',...oldShared,text:'new global shared',expectedVersion:oldShared.version});
+    const nativeAgent={id:feedback.id,session:feedback};
+    assembly=await ctx.systemPrompt.assemble(assembleContextFor(nativeAgent));
+    assert.ok(assembly.sections.find(s=>s.name==='prompt-lab:rules').text.includes('shared policy'));
+    assert.ok(!assembly.sections.find(s=>s.name==='prompt-lab:rules').text.includes('new global shared'));
+    assert.equal(state.snapshot().assembly.sessionId,feedback.id);
+    const other=await ctx.systemPrompt.assemble(assembleContextFor({id:'other',session:{id:'other'}}));
+    assert.ok(other.sections.find(s=>s.name==='prompt-lab:rules').text.includes('new global shared'));
+    state.initialize();
+    assert.ok((await ctx.systemPrompt.assemble(assembleContextFor(nativeAgent))).sections.find(s=>s.name==='prompt-lab:rules').text.includes('shared policy'));
+    state.updateSessionBinding({action:'binding.remove',sessionId:feedback.id,expectedRevision:state.snapshot().sessionBindings.revision});
     web=ctx.plugin(WebServer,{host:'127.0.0.1',port:0});
     await new Promise(setImmediate);
     api=ctx.plugin(ui);await new Promise(setImmediate);
@@ -100,7 +117,7 @@ async function main() {
     await injection.dispose(); injection = null;
     assert.equal((await ctx.systemPrompt.assemble()).contexts.length, 1);
     console.log(JSON.stringify({ ok: true, hostVersion: version, node: process.version,
-      checks: ['dynamic two-section injection', 'saved profile', 'redact', 'process snapshot', 'shared rules and independent switches', 'real WebServer API/export/import/disposal', 'studio offline isolation and disposal','real SessionStore/SessionQuery selected visible messages','asset version API', 'disabled injection with strip', 'dispose restores host'] }));
+      checks: ['dynamic two-section injection', 'saved profile', 'redact', 'session-associated observation and final-request evidence boundary', 'shared rules and independent switches', 'real WebServer API/export/import/disposal', 'studio offline isolation and disposal','real SessionStore/SessionQuery selected visible messages','asset version API', 'real assembleContextFor session isolation and frozen rules across reload', 'disabled injection with strip', 'dispose restores host'] }));
   } finally {
     stopReader?.();await sessionQuery?.dispose();await sessions?.dispose();
     await injection?.dispose();
