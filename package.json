@@ -53,7 +53,7 @@
   "scripts": {
     "check": "node scripts/check.cjs",
     "test": "node --test tests/*.test.mjs",
-    "test:plain": "node tests/plugin.test.mjs && node tests/stability.test.mjs && node tests/client.test.mjs && node tests/management.test.mjs && node tests/studio.test.mjs",
+    "test:plain": "node tests/plugin.test.mjs && node tests/stability.test.mjs && node tests/client.test.mjs && node tests/management.test.mjs && node tests/studio.test.mjs && node tests/studio-foundations.test.mjs",
     "test:host": "node scripts/host-smoke.cjs",
     "test:browser": "node scripts/browser-smoke.cjs",
     "test:rollback": "node scripts/rollback-smoke.cjs",
