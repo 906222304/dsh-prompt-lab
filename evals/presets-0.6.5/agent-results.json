@@ -1,0 +1,227 @@
+{
+  "host": "DSH 0.2.2-rc.1",
+  "driver": "official headless composition + native AgentRegistry/AgentLoop and tools; isolated custom direct driver adds explicit budgets",
+  "permissions": "workspace-write + ask; no global permission or security settings changed",
+  "credentials": "existing official credential service resolves configured reference in memory; no credential files or API keys copied",
+  "setupFailure": "one zero-dispatch harness instrumentation error corrected before either measured run",
+  "A": {
+    "testExitCode": 0,
+    "testUnchanged": true,
+    "changedFiles": [
+      "M pricing.py"
+    ],
+    "terminal": {
+      "turn": 1,
+      "reason": {
+        "kind": "completed"
+      }
+    },
+    "modelCalls": 6,
+    "toolCalls": 7,
+    "toolNames": [
+      "pwsh",
+      "glob",
+      "read",
+      "read",
+      "pwsh",
+      "write",
+      "pwsh"
+    ],
+    "elapsedMs": 21224,
+    "patch": "diff --git a/pricing.py b/pricing.py\nindex 205b0ea..0f8b281 100644\n--- a/pricing.py\n+++ b/pricing.py\n@@ -1,6 +1,12 @@\n def subtotal(items):\n+    if items is None:\n+        return 0\n     total = 0\n     for item in items:\n-        quantity = item.get(\"quantity\") or 1\n+        quantity = item.get(\"quantity\")\n+        if quantity is None:\n+            quantity = 1\n+        if quantity < 0:\n+            raise ValueError(\"quantity must not be negative\")\n         total += item[\"price\"] * quantity\n     return total\n",
+    "testHash": "d3b08bca9a665346db0406233952bc951d23fc36f796b2994355d9f7fb7f1851",
+    "independentBoundaryExitCode": 0,
+    "independentBoundaryChecks": 7,
+    "usage": {
+      "logicalDispatches": 6,
+      "reportedCalls": 6,
+      "uncachedInputTokens": 13965,
+      "cacheReadTokens": 63744,
+      "outputTokens": 1795,
+      "totalTokens": 79504,
+      "cost": null
+    },
+    "systemPromptCharacters": 23516,
+    "systemPromptSha256": "bbb4efa665d4109b686477bc17578711700b9e0b22627d45be4854a47afbe9e3",
+    "containsOriginal": true,
+    "containsEngineering": false,
+    "requestConfig": {
+      "maxTokens": 2048,
+      "provider": "myapi",
+      "model": "workbuddy/cn:deepseek-v4.1-flash",
+      "reasoningEffort": "max"
+    },
+    "finalMessage": "修复完成。\n\n## 复现（修复前）\n```\npython -c \"subtotal(None)\"      → TypeError: 'NoneType' object is not iterable\npython -c \"subtotal([{price:7,quantity:0}])\"  → 7   （应为 0）\npython -c \"subtotal([{price:7,quantity:-1}])\" → -7  （应抛 ValueError）\n\npython -m unittest -v\ntest_default_quantity ... ok\ntest_empty ... ok\ntest_negative_quantity ... FAIL   AssertionError: ValueError not raised\ntest_no_mutation ... ok\ntest_none ... ERROR  TypeError: 'NoneType' object is not iterable\ntest_zero_quantity ... FAIL       AssertionError: 7 != 0\nRan 6 tests — FAILED (failures=2, errors=1)   [exit code: 1]\n```\n根因：`item.get(\"quantity\") or 1` 把 `0` 也当成缺省（`or` 对 0 为假），且未处理 `items is None`，也没有负数量校验。\n\n## 最小修复（仅 pricing.py）\n```python\ndef subtotal(items):\n    if items is None:\n        return 0\n    total = 0\n    for item in items:\n        quantity = item.get(\"quantity\")\n        if quantity is None:\n            quantity = 1\n        if quantity < 0:\n            raise ValueError(\"quantity must not be negative\")\n        total += item[\"price\"] * quantity\n    return total\n```\n- `items is None` → 0；空列表仍 → 0\n- 缺省 quantity（键缺失或 None）→ 1\n- `quantity=0` 保持 0（不再被 `or` 吞掉）\n- 负数抛 `ValueError`\n- 只用 `item.get` 读取，不写回、不复制改动，输入不被修改\n\n## 修复后命令结果\n```\npython -m unittest -v\ntest_default_quantity ... ok\ntest_empty ... ok\ntest_negative_quantity ... ok\ntest_no_mutation ... ok\ntest_none ... ok\ntest_zero_quantity ... ok\n----------------------------------------------------------------------\nRan 6 tests in 0.000s\nOK\n```\n补充验证：`sum=17 | 未变更=True | None=0 | 空=0 | 缺省=7 | zero=0`\n\n## 交付面检查\n```\ngit status --porcelain → M pricing.py\n```\n只改了 `pricing.py`（7 增 1 删），测试文件与其他目录零改动。复现用的是 `python -c` 内联命令，未落地临时脚本，无需清理。",
+    "tools": [
+      {
+        "name": "pwsh",
+        "arguments": {
+          "command": "Get-ChildItem -Force | Select-Object Mode,Length,Name; Write-Output \"---\"; Get-ChildItem -Recurse -File -Filter *.py | Select-Object FullName,Length",
+          "description": "List workspace files"
+        }
+      },
+      {
+        "name": "glob",
+        "arguments": {
+          "pattern": "**/*.py"
+        }
+      },
+      {
+        "name": "read",
+        "arguments": {
+          "file_path": "D:\\private\\github\\dsh\\plugin\\.scratch\\evaluation-065\\agent-A\\pricing.py"
+        }
+      },
+      {
+        "name": "read",
+        "arguments": {
+          "file_path": "D:\\private\\github\\dsh\\plugin\\.scratch\\evaluation-065\\agent-A\\test_pricing.py"
+        }
+      },
+      {
+        "name": "pwsh",
+        "arguments": {
+          "command": "python --version; Write-Output \"=== 复现 ===\"; python -c \"from pricing import subtotal; print('None:', subtotal(None))\" ; Write-Output \"--- 零数量 ---\"; python -c \"from pricing import subtotal; print(subtotal([{'price': 7, 'quantity': 0}]))\"; Write-Output \"--- 负数量 ---\"; python -c \"from pricing import subtotal; print(subtotal([{'price': 7, 'quantity': -1}]))\"; Write-Output \"=== 现有单测 ===\"; python -m unittest -v",
+          "description": "Reproduce current failures"
+        }
+      },
+      {
+        "name": "write",
+        "arguments": {
+          "file_path": "D:\\private\\github\\dsh\\plugin\\.scratch\\evaluation-065\\agent-A\\pricing.py",
+          "content": "def subtotal(items):\n    if items is None:\n        return 0\n    total = 0\n    for item in items:\n        quantity = item.get(\"quantity\")\n        if quantity is None:\n            quantity = 1\n        if quantity < 0:\n            raise ValueError(\"quantity must not be negative\")\n        total += item[\"price\"] * quantity\n    return total\n"
+        }
+      },
+      {
+        "name": "pwsh",
+        "arguments": {
+          "command": "python -m unittest -v; Write-Output \"=== 补充验证 ===\"; python -c \"from copy import deepcopy; from pricing import subtotal; v=[{'price':7,'quantity':2},{'price':3}]; o=deepcopy(v); print('sum=',subtotal(v),'| 未变更=',v==o); print('None=',subtotal(None),'| 空=',subtotal([]),'| 缺省=',subtotal([{'price':7}]),'| zero=',subtotal([{'price':7,'quantity':0}]))\"; Write-Output \"=== git diff ===\"; git status --porcelain; git diff --stat",
+          "description": "Run unittest suite and verify"
+        }
+      }
+    ]
+  },
+  "B": {
+    "testExitCode": 0,
+    "testUnchanged": true,
+    "changedFiles": [
+      "M pricing.py"
+    ],
+    "terminal": {
+      "turn": 1,
+      "reason": {
+        "kind": "completed"
+      }
+    },
+    "modelCalls": 7,
+    "toolCalls": 10,
+    "toolNames": [
+      "pwsh",
+      "glob",
+      "read",
+      "read",
+      "read",
+      "pwsh",
+      "edit",
+      "pwsh",
+      "pwsh",
+      "pwsh"
+    ],
+    "elapsedMs": 26889,
+    "patch": "diff --git a/pricing.py b/pricing.py\nindex 205b0ea..0f8b281 100644\n--- a/pricing.py\n+++ b/pricing.py\n@@ -1,6 +1,12 @@\n def subtotal(items):\n+    if items is None:\n+        return 0\n     total = 0\n     for item in items:\n-        quantity = item.get(\"quantity\") or 1\n+        quantity = item.get(\"quantity\")\n+        if quantity is None:\n+            quantity = 1\n+        if quantity < 0:\n+            raise ValueError(\"quantity must not be negative\")\n         total += item[\"price\"] * quantity\n     return total\n",
+    "testHash": "d3b08bca9a665346db0406233952bc951d23fc36f796b2994355d9f7fb7f1851",
+    "independentBoundaryExitCode": 0,
+    "independentBoundaryChecks": 7,
+    "usage": {
+      "logicalDispatches": 7,
+      "reportedCalls": 7,
+      "uncachedInputTokens": 14012,
+      "cacheReadTokens": 80256,
+      "outputTokens": 2107,
+      "totalTokens": 96375,
+      "cost": null
+    },
+    "systemPromptCharacters": 23726,
+    "systemPromptSha256": "7f69f60940c9ea7f7c020edd5c5e2208b32d419cf898feb768796febabb40557",
+    "containsOriginal": true,
+    "containsEngineering": true,
+    "requestConfig": {
+      "maxTokens": 2048,
+      "provider": "myapi",
+      "model": "workbuddy/cn:deepseek-v4.1-flash",
+      "reasoningEffort": "max"
+    },
+    "finalMessage": "## 复现（修复前）\n\n运行 `python -m unittest -v`：6 个测试，2 failed + 1 error，退出码 1。\n\n```\ntest_default_quantity ... ok\ntest_empty ... ok\ntest_negative_quantity ... FAIL\ntest_no_mutation ... ok\ntest_none ... ERROR\ntest_zero_quantity ... FAIL\n\nERROR: test_none\n    for item in items:\nTypeError: 'NoneType' object is not iterable\n\nFAIL: test_negative_quantity\nAssertionError: ValueError not raised\n\nFAIL: test_zero_quantity\nAssertionError: 7 != 0\n```\n\n根因在 `pricing.py` 的 `quantity = item.get(\"quantity\") or 1`：`0` 是假值被当成 1；缺少负数量校验；`items=None` 直接进入迭代。\n\n## 修复（仅 pricing.py）\n\n```python\ndef subtotal(items):\n    if items is None:\n        return 0\n    total = 0\n    for item in items:\n        quantity = item.get(\"quantity\")\n        if quantity is None:\n            quantity = 1\n        if quantity < 0:\n            raise ValueError(\"quantity must not be negative\")\n        total += item[\"price\"] * quantity\n    return total\n```\n\n只做只读访问，不写回 `item`；`quantity=None` 仍按缺省 1 处理，与原有容错行为一致。\n\n## 验证（修复后）\n\n`python -m unittest -v` 实际输出：\n\n```\ntest_default_quantity ... ok\ntest_empty ... ok\ntest_negative_quantity ... ok\ntest_no_mutation ... ok\ntest_none ... ok\ntest_zero_quantity ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.000s\n\nOK\nEXIT=0\n```\n\n补充边界（通过 stdin 临时执行，未落盘脚本）：`None -> 0`、`[] -> 0`、缺省 quantity `-> 7`、`quantity=0 -> 0`、`quantity=None -> 7`、`quantity=-1 -> ValueError`，且对输入列表调用前后深比较相等。`git status` 仅显示 ` M pricing.py`，测试与其他目录未改动；临时脚本未创建，无需清理。",
+    "tools": [
+      {
+        "name": "pwsh",
+        "arguments": {
+          "command": "Get-ChildItem -Force | Select-Object Mode,Length,Name; Write-Output '---'; Get-Location",
+          "description": "List workspace contents"
+        }
+      },
+      {
+        "name": "glob",
+        "arguments": {
+          "pattern": "**/*.py"
+        }
+      },
+      {
+        "name": "read",
+        "arguments": {
+          "file_path": "D:\\private\\github\\dsh\\plugin\\.scratch\\evaluation-065\\agent-B\\pricing.py"
+        }
+      },
+      {
+        "name": "read",
+        "arguments": {
+          "file_path": "D:\\private\\github\\dsh\\plugin\\.scratch\\evaluation-065\\agent-B\\test_pricing.py"
+        }
+      },
+      {
+        "name": "read",
+        "arguments": {
+          "file_path": "D:\\private\\github\\dsh\\plugin\\.scratch\\evaluation-065\\agent-B\\README.md"
+        }
+      },
+      {
+        "name": "pwsh",
+        "arguments": {
+          "command": "python -m unittest -v 2>&1; Write-Output \"EXIT=$LASTEXITCODE\"",
+          "description": "Run baseline unit tests to reproduce failures"
+        }
+      },
+      {
+        "name": "edit",
+        "arguments": {
+          "file_path": "D:\\private\\github\\dsh\\plugin\\.scratch\\evaluation-065\\agent-B\\pricing.py",
+          "old_string": "def subtotal(items):\n    total = 0\n    for item in items:\n        quantity = item.get(\"quantity\") or 1\n        total += item[\"price\"] * quantity\n    return total",
+          "new_string": "def subtotal(items):\n    if items is None:\n        return 0\n    total = 0\n    for item in items:\n        quantity = item.get(\"quantity\")\n        if quantity is None:\n            quantity = 1\n        if quantity < 0:\n            raise ValueError(\"quantity must not be negative\")\n        total += item[\"price\"] * quantity\n    return total"
+        }
+      },
+      {
+        "name": "pwsh",
+        "arguments": {
+          "command": "python -m unittest -v 2>&1; Write-Output \"EXIT=$LASTEXITCODE\"",
+          "description": "Run full unit test suite after fix"
+        }
+      },
+      {
+        "name": "pwsh",
+        "arguments": {
+          "command": "@'\nfrom pricing import subtotal\ncases = [None, [], [{\"price\": 7}], [{\"price\": 7, \"quantity\": 0}], [{\"price\": 7, \"quantity\": None}]]\nfor c in cases:\n    print(repr(c), \"->\", subtotal(c))\ntry:\n    subtotal([{\"price\": 7, \"quantity\": -1}])\nexcept ValueError as e:\n    print(\"negative -> ValueError:\", e)\ndata = [{\"price\": 7, \"quantity\": 2}, {\"price\": 3}]\nimport copy\nsnap = copy.deepcopy(data)\nprint(\"sum:\", subtotal(data), \"unchanged:\", data == snap, data)\n'@ | python -",
+          "description": "Verify edge cases and input immutability"
+        }
+      },
+      {
+        "name": "pwsh",
+        "arguments": {
+          "command": "git status --porcelain; Write-Output '---'; git diff -- pricing.py",
+          "description": "Confirm only pricing.py changed"
+        }
+      }
+    ]
+  },
+  "samePatch": true,
+  "totalModelDispatches": 13
+}

@@ -1,6 +1,6 @@
 {
   "name": "dsh-prompt-lab",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "提示词（Prompt Lab）：DeepSeek Harness 的 AI 提示词创作与共享规则管理面板，支持生成、改写、提取规则和注入诊断",
   "type": "module",
   "main": "lib/index.js",
@@ -30,7 +30,10 @@
     "docs/project-workflows.zh-CN.md",
     "docs/release-0.6.4.md",
     "docs/assets-guide.zh-CN.md",
-    "docs/runtime-acceptance-0.6.3.md"
+    "docs/runtime-acceptance-0.6.3.md",
+    "licenses",
+    "docs/prompt-presets-review.zh-CN.md",
+    "docs/release-0.6.5.md"
   ],
   "keywords": [
     "dsh",

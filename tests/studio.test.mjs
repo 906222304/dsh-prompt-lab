@@ -99,7 +99,7 @@ test('a second concurrent task is rejected and model absence leaves assets avail
   let release;backend.generate=()=>new Promise(resolve=>{release=resolve;});const job=engine.start(request());
   assert.throws(()=>engine.start(request()),/正在运行/);await new Promise(setImmediate);engine.cancel(job.id);release({text:'{}',route});
   backend=null;assert.equal((await engine.capabilities()).available,false);assert.throws(()=>engine.start(request()),/未就绪/);
-  assert.equal(snapshot().profiles.length,3);
+  assert.equal(snapshot().profiles.length,1);
 });
 
 test('adoption rejects changed profiles and referenced rules and retains the candidate',async()=>{
@@ -107,7 +107,7 @@ test('adoption rejects changed profiles and referenced rules and retains the can
   assert.throws(()=>adopt(job.id),/配置已变化/);assert.equal(engine.get(job.id).status,'succeeded');
   const id=updateRule({action:'rule.create',name:'引用',text:'原文'}).editedRuleId;
   job=await done(engine.start(request({sourceRuleIds:[id]})).id);let r=snapshot().ruleSets[0];updateRule({action:'rule.save',id,text:'修改',expectedVersion:r.version});
-  assert.throws(()=>adopt(job.id),/共享规则已变化/);assert.equal(snapshot().profiles.length,3);
+  assert.throws(()=>adopt(job.id),/共享规则已变化/);assert.equal(snapshot().profiles.length,1);
 });
 
 test('failed atomic profile write creates no orphan rules and can be retried once',async()=>{
@@ -115,14 +115,14 @@ test('failed atomic profile write creates no orphan rules and can be retried onc
   fs.renameSync=(from,to)=>{if(to===path.join(directory,'profiles.json'))throw Object.assign(new Error('fixture write denied'),{code:'EACCES'});return rename(from,to);};
   try{assert.throws(()=>adopt(job.id),/write denied/);}finally{fs.renameSync=rename;}
   assert.deepEqual(snapshot().profiles,before.profiles);assert.deepEqual(snapshot().ruleSets,before.ruleSets);
-  const saved=adopt(job.id);assert.equal(saved.profiles.length,4);assert.equal(saved.ruleSets.length,1);
+  const saved=adopt(job.id);assert.equal(saved.profiles.length,2);assert.equal(saved.ruleSets.length,1);
 });
 
 test('a committed asset survives receipt-write failure and recovery does not duplicate it',async()=>{
   const job=await done(engine.start(request()).id),persist=engine.persist.bind(engine);
   engine.persist=value=>{if(value.application?.status==='committed')throw new Error('fixture receipt failure');persist(value);};
-  const saved=adopt(job.id);assert.ok(saved.studioWarning);assert.equal(saved.profiles.length,4);
-  engine=createEngine();const again=adopt(job.id);assert.equal(again.alreadyApplied,true);assert.equal(again.profiles.length,4);assert.equal(again.ruleSets.length,1);
+  const saved=adopt(job.id);assert.ok(saved.studioWarning);assert.equal(saved.profiles.length,2);
+  engine=createEngine();const again=adopt(job.id);assert.equal(again.alreadyApplied,true);assert.equal(again.profiles.length,2);assert.equal(again.ruleSets.length,1);
 });
 
 test('rule extraction adopts only selected rules without changing profiles or activation',async()=>{
@@ -150,13 +150,13 @@ test('bounded history and clearing remove only owned job records and preserve as
   engine=createEngine({limits:{history:2}});
   for(let i=0;i<3;i++)await done(engine.start(request()).id);
   assert.equal(engine.history().length,2);fs.writeFileSync(path.join(engine.root,'jobs','unrelated.txt'),'keep');
-  engine.clear();assert.equal(engine.history().length,0);assert.equal(fs.readFileSync(path.join(engine.root,'jobs','unrelated.txt'),'utf8'),'keep');assert.equal(snapshot().profiles.length,3);
+  engine.clear();assert.equal(engine.history().length,0);assert.equal(fs.readFileSync(path.join(engine.root,'jobs','unrelated.txt'),'utf8'),'keep');assert.equal(snapshot().profiles.length,1);
 });
 
 test('corrupt studio settings cannot be overwritten or disable profile management',()=>{
   fs.mkdirSync(path.join(directory,'studio'),{recursive:true});fs.writeFileSync(path.join(directory,'studio','settings.json'),'{broken');
   engine=createEngine();assert.throws(()=>engine.start(request()),/阻止覆盖/);assert.equal(fs.readFileSync(engine.settingsFile(),'utf8'),'{broken');
-  const saved=updateProfile({action:'create',name:'仍能管理'});assert.equal(saved.profiles.length,4);
+  const saved=updateProfile({action:'create',name:'仍能管理'});assert.equal(saved.profiles.length,2);
 });
 
 test('host model adapter uses explicit messages and zero tools, assembles final blocks once',async()=>{
@@ -182,7 +182,7 @@ test('studio HTTP keeps the UI origin gate and returns service-unavailable witho
   }
   assert.equal((await invoke({host:'127.0.0.1'})).code,403);
   assert.equal((await invoke({host:'127.0.0.1','x-prompt-lab-ui':'1',origin:'https://foreign.invalid'})).code,403);
-  const response=await invoke({host:'127.0.0.1','x-prompt-lab-ui':'1'});assert.equal(response.code,200);assert.equal(response.body.available,false);assert.equal(snapshot().profiles.length,3);
+  const response=await invoke({host:'127.0.0.1','x-prompt-lab-ui':'1'});assert.equal(response.code,200);assert.equal(response.body.available,false);assert.equal(snapshot().profiles.length,1);
 });
 
 test('identical suggested rules deduplicate and reuse selected existing rules',()=>{

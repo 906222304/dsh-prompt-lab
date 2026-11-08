@@ -47,25 +47,28 @@ test('registers a real text callback and exposes the evaluated prompt', () => {
   assert.equal(s.logs, undefined);
 });
 
+let secondaryId,thirdId;
 test('save and activate rule set, dynamic callback uses current profile', () => {
-  updateProfile({ action: 'save', id: 'direct', prompt: '身份标记 ABC', rules: '先列出验证条件。' });
-  updateProfile({ action: 'activate', id: 'direct' });
+  secondaryId=updateProfile({action:'create',name:'Synthetic second',prompt:'second'}).editedId;
+  thirdId=updateProfile({action:'create',name:'Synthetic third',prompt:'third'}).editedId;
+  updateProfile({ action: 'save', id: secondaryId, prompt: '身份标记 ABC', rules: '先列出验证条件。' });
+  updateProfile({ action: 'activate', id: secondaryId });
   // 切换配置后，同一个 text() 回调应返回新配置的拼装结果。
   assert.equal(callbacks.section.text(), '身份标记 ABC');
   assert.equal(callbacks['prompt-lab:rules'].text(), '## 当前规则集\n先列出验证条件。');
   assert.equal(snapshot().effectivePrompt, '身份标记 ABC\n\n## 当前规则集\n先列出验证条件。');
-  assert.equal(snapshot().selected, 'direct');
+  assert.equal(snapshot().selected, secondaryId);
   assert(fs.existsSync(path.join(dir, 'prompt-lab', 'profiles.json')));
 });
 
 test('saved profiles survive reload and bad edits do not change state', () => {
   initialize({ enabled: true, prompt: 'fallback' });
   // 重新初始化后，磁盘上的配置与选中项应被恢复。
-  assert.equal(snapshot().selected, 'direct');
+  assert.equal(snapshot().selected, secondaryId);
   assert.equal(snapshot().effectivePrompt.includes('身份标记 ABC'), true);
   // 空提示词会被拒绝，且不影响已有状态。
-  assert.throws(() => updateProfile({ action: 'save', id: 'direct', prompt: '', rules: '' }));
-  assert.equal(snapshot().profiles.find(x => x.id === 'direct').prompt, '身份标记 ABC');
+  assert.throws(() => updateProfile({ action: 'save', id: secondaryId, prompt: '', rules: '' }));
+  assert.equal(snapshot().profiles.find(x => x.id === secondaryId).prompt, '身份标记 ABC');
 });
 
 test('captures an observer snapshot without changing assembled result', async () => {
@@ -338,7 +341,7 @@ test('local API rejects remote, forged origins and requests without UI header', 
   assert.equal((await dispatch('GET', undefined, { headers: { origin: 'https://bad.example' } })).status, 403);
   assert.equal((await dispatch('GET', undefined, { headers: { 'x-prompt-lab-ui': '' } })).status, 403);
   // 桌面 webview 的 origin: null 属于可信来源。
-  assert.equal((await dispatch('POST', { action: 'activate', id: 'eval' }, { headers: { origin: 'null' } })).status, 200);
+  assert.equal((await dispatch('POST', { action: 'activate', id: thirdId }, { headers: { origin: 'null' } })).status, 200);
 });
 
 // 增量轮询：客户端带上已知版本号后，状态没变时只回一个极小响应，不再重发整份快照。
@@ -360,7 +363,7 @@ test('GET honours the since revision and skips unchanged snapshots', async () =>
 // 状态版本号必须单调递增，否则增量轮询会漏掉更新。
 test('every state change bumps the snapshot revision', () => {
   const before = snapshot().revision;
-  updateProfile({ action: 'activate', id: 'direct' });
+  updateProfile({ action: 'activate', id: secondaryId });
   assert(snapshot().revision > before);
 });
 

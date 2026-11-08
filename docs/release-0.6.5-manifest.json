@@ -1,0 +1,312 @@
+{
+  "version": "0.6.5",
+  "releaseDate": "2026-11-08",
+  "timezone": "Asia/Hong_Kong",
+  "status": "verified-live",
+  "source": {
+    "baselineVersion": "0.6.4",
+    "baselineCommit": "b1b03dfa7e95b9a8ba4dcf5fe5c65092ce4fc817",
+    "publicationAuthority": "Git refs; this verification record is included in the source commit",
+    "npmPublished": false
+  },
+  "package": {
+    "filename": "dsh-prompt-lab-0.6.5.tgz",
+    "bytes": 182763,
+    "files": 49,
+    "sha256": "4E97DE7FADD786C23CAACA0E356980911EF6ADC5C117D359A74ED7B3121294DC",
+    "allArchiveFilesMatchSource": true,
+    "thirdPartyDefaultAndLicenseIncluded": true,
+    "testAndPrivateMaterialsExcluded": true
+  },
+  "verification": {
+    "nodeTests": {
+      "passed": 139,
+      "failed": 0
+    },
+    "plainTestsPassed": 139,
+    "syntaxFiles": 44,
+    "chromiumReactDOM": {
+      "ok": true,
+      "version": "0.6.5",
+      "renderer": "Chromium + React 18 DOM",
+      "checks": [
+        "current-session A/B/blank identity, late metadata, two panels and scoped drafts/materials/jobs",
+        "complete asset preview/download/upload/append, inactive binding handoff and original JSON compatibility",
+        "stale scenario diff and save-as without calls or old score inheritance",
+        "existing profile/rule CRUD, conflict, import/export and draft recovery",
+        "responsive light/dark management and settings",
+        "AI generation, diff and atomic unactivated adoption",
+        "AI revise into draft then explicit save",
+        "AI rule extraction and selection adoption",
+        "AI examples, editable suite, two-version evaluation and bounded optimization",
+        "writer excludes held-out samples",
+        "explicit selected-session feedback provenance",
+        "rule curation and unused-rule pruning",
+        "full asset-version restore without activation",
+        "explicit project scan/selection, stale-file conflict before dispatch and frozen sources",
+        "failure conversation to reviewed training-only regression suite",
+        "session snapshot preview, pin and removal without global activation",
+        "layered provenance diagnostics with final-request boundary",
+        "scenario save/preview/load, source-version conflict and no automatic activation or model calls",
+        "late candidate never overwrites changed draft",
+        "close/reopen active AI task and cancellation",
+        "invalid output bounded repair and service unavailable",
+        "1200/520/360px light and dark AI drawer/evaluation"
+      ],
+      "aiFixtureCalls": 25,
+      "artifacts": "D:\\private\\github\\dsh\\plugin\\.scratch\\browser-artifacts-0.6.5"
+    },
+    "nativeIsolatedHost": {
+      "ok": true,
+      "hostVersion": "0.2.2-rc.1",
+      "node": "v24.21.0",
+      "checks": [
+        "dynamic two-section injection",
+        "saved profile",
+        "redact",
+        "session-associated observation and final-request evidence boundary",
+        "shared rules and independent switches",
+        "real WebServer API/export/import/disposal",
+        "studio offline isolation and disposal",
+        "real SessionStore/SessionQuery selected visible messages",
+        "asset version API",
+        "real assembleContextFor session isolation and frozen rules across reload",
+        "disabled injection with strip",
+        "dispose restores host"
+      ]
+    },
+    "archiveWith064Baseline": {
+      "ok": true,
+      "version": "0.6.5",
+      "archiveRuntime": true,
+      "optimization": true,
+      "heldOutExcluded": true,
+      "adoption": true,
+      "restore": true,
+      "baselineVersion": "0.6.4",
+      "baselineReadsCoreAssets": true,
+      "oneFreshDefault": true,
+      "frozenDefaultHashMatched": true,
+      "workspace": true,
+      "sessionPinReload": true,
+      "regressionV2": true,
+      "scenario": true,
+      "baselineKeepsPinAndV2": true,
+      "baselineV3Readable": true,
+      "portableGraphRoundTrip": true,
+      "importRecoveryAndRetry": true,
+      "scenarioRefresh": true,
+      "fullBackupByteRestore": true
+    },
+    "archiveWith063Baseline": {
+      "ok": true,
+      "version": "0.6.5",
+      "archiveRuntime": true,
+      "optimization": true,
+      "heldOutExcluded": true,
+      "adoption": true,
+      "restore": true,
+      "baselineVersion": "0.6.3",
+      "baselineReadsCoreAssets": true,
+      "oneFreshDefault": true,
+      "frozenDefaultHashMatched": true,
+      "workspace": true,
+      "sessionPinReload": true,
+      "regressionV2": true,
+      "scenario": true,
+      "baselineKeepsPinAndV2": true,
+      "baselineV3Readable": false,
+      "portableGraphRoundTrip": true,
+      "importRecoveryAndRetry": true,
+      "scenarioRefresh": true,
+      "fullBackupByteRestore": true
+    },
+    "gitDiffCheck": true
+  },
+  "live": {
+    "ok": true,
+    "version": "0.6.5",
+    "port": 54938,
+    "registered": true,
+    "observer": true,
+    "profileCount": 1,
+    "selected": "default",
+    "promptHash": "111bcf3a26ec7e300d592e298231fe7d611526de3b86c1cdd1002c94d89536ed",
+    "assetsExportAndPreview": true,
+    "scenarioEndpoint": true,
+    "previewDidNotWrite": true,
+    "noActiveUserJobs": true,
+    "checkedAt": "2026-11-08T05:58:33.603Z",
+    "manualReloadConfirmed": true,
+    "clientSourceMatched": true,
+    "clientRevision": "749f7bdc1d5f",
+    "originalDataFilesUnchanged": 8,
+    "nativeDesktopClicksVerified": false,
+    "nativeDesktopLimitation": "computer-use helper failed during Windows sandbox initialization; user performed reload; browser/API and native headless evidence recorded separately"
+  },
+  "rollback": {
+    "upgradedFrom": "0.6.3",
+    "previousTargetVersion": "0.6.3",
+    "sourceBaselineVersion": "0.6.4",
+    "backupDirectoryName": "prompt-lab-0.6.5-before-1794116650564",
+    "backupDataFiles": 8,
+    "credentialsExcluded": true,
+    "priorBeforeDeletionBackupRetained": true,
+    "bothBaselineRestoreChecksPassed": true,
+    "baseline063CannotReadV3": true
+  },
+  "evaluation": {
+    "protocol": "evals/presets-0.6.5/protocol.json",
+    "report": "docs/evaluation-presets-0.6.5.md",
+    "text": {
+      "dispatches": 11,
+      "complete": false,
+      "accepted": false,
+      "reason": "one candidate output and one pair grading truncated; no complete winner",
+      "usage": {
+        "logicalDispatches": 11,
+        "reportedCalls": 11,
+        "uncachedInputTokens": 22333,
+        "cacheReadTokens": 29696,
+        "outputTokens": 7503,
+        "totalTokens": 59532,
+        "cost": null
+      }
+    },
+    "nativeAgents": {
+      "A": {
+        "calls": 6,
+        "tools": 7,
+        "elapsedMs": 21224,
+        "originalTests": 6,
+        "boundaries": 7,
+        "passed": true,
+        "usage": {
+          "logicalDispatches": 6,
+          "reportedCalls": 6,
+          "uncachedInputTokens": 13965,
+          "cacheReadTokens": 63744,
+          "outputTokens": 1795,
+          "totalTokens": 79504,
+          "cost": null
+        }
+      },
+      "B": {
+        "calls": 7,
+        "tools": 10,
+        "elapsedMs": 26889,
+        "originalTests": 6,
+        "boundaries": 7,
+        "passed": true,
+        "usage": {
+          "logicalDispatches": 7,
+          "reportedCalls": 7,
+          "uncachedInputTokens": 14012,
+          "cacheReadTokens": 80256,
+          "outputTokens": 2107,
+          "totalTokens": 96375,
+          "cost": null
+        }
+      },
+      "samePatch": true,
+      "sameModelParameters": true,
+      "testsUnchanged": true,
+      "isolatedWorkspacesAndSessions": true
+    },
+    "totalRealLogicalDispatches": 24,
+    "cost": null,
+    "defaultOriginalPreserved": true,
+    "candidateAdopted": false,
+    "secondRoundRun": false,
+    "files": [
+      {
+        "path": "evals/presets-0.6.5/agent-A-after-tests.txt",
+        "sha256": "5078f6871f3a25543adab560d18222ffa6b3b3c9d06b71032c577502bd45c805",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/agent-A-before-tests.txt",
+        "sha256": "29bc21ebdc0343007ea2f86200bc689be689b80454aadd9e5dbfd7bf404191a1",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/agent-A-diff.patch",
+        "sha256": "ee49ead1fb43cbef1eb2e9fbcbc3f689364deb146e98d01200373c84d0ba4a04",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/agent-B-after-tests.txt",
+        "sha256": "5078f6871f3a25543adab560d18222ffa6b3b3c9d06b71032c577502bd45c805",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/agent-B-before-tests.txt",
+        "sha256": "59affe4a5daf1d045a876a5f9d664ff8622b9c018e7f434ca44b6a1febb69a0e",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/agent-B-diff.patch",
+        "sha256": "ee49ead1fb43cbef1eb2e9fbcbc3f689364deb146e98d01200373c84d0ba4a04",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/agent-results.json",
+        "sha256": "f24c438ae9c4955390600ab31bd3a50538f32482de39e955a9ee09ea28a97039",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/fixture/.gitignore",
+        "sha256": "32dae3052f331ee34d628ef535709b301259a45df7c7522c4d35dcf49873f00b",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/fixture/pricing.py",
+        "sha256": "a6ee71c0c0daaea9a140d98f3ea21902ac0469da0544e0904cd0200c023ed33f",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/fixture/README.md",
+        "sha256": "780c64708638526f35306e8c8109466f4b372fe0bd82aff149b4fbc2a683582d",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/fixture/test_pricing.py",
+        "sha256": "52d16f34a88bb492d354d15049a1307692a25df0ac188081b6a58b864ce444bf",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/protocol.json",
+        "sha256": "733308801c648cfbce537f1546cdf59530d6221f5876e641c2dd4743be54c530",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/README.md",
+        "sha256": "32b0e26ae430ece6b7f998b38dad18db7f1f02bc83086426700335a185080b7c",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/text-results.json",
+        "sha256": "06d0f3acb28670508b47c8093d7cc16c568bbcc75032ef7eaa6cb3b2686a4c68",
+        "canonicalization": "UTF-8 LF"
+      },
+      {
+        "path": "evals/presets-0.6.5/verify_boundaries.py",
+        "sha256": "5a8ba193a44a69a2728ec044aa8769206b005958eb78e37af2ba6f4e7ca2b8c4",
+        "canonicalization": "UTF-8 LF"
+      }
+    ]
+  },
+  "approvalReview": {
+    "blockedOperation": "persist entire provider configuration to scratch",
+    "blockedOperationExecuted": false,
+    "resolution": "only non-sensitive allowlisted model metadata persisted; existing official credential service resolves reference in memory; no API keys or credential files copied"
+  },
+  "scope": {
+    "completed": [
+      1,
+      2
+    ],
+    "promptfooIntegration": false,
+    "physicalNetworkRetryCountVerified": false
+  }
+}

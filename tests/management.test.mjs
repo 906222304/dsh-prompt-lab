@@ -88,13 +88,14 @@ test('profile create copy rename and reload do not silently activate or share mu
 });
 
 test('active profile deletion requires confirmation and an explicit fallback, last item is protected', () => {
+  const second=createProfile('Synthetic fallback'),third=createProfile('Synthetic third');
   const p = current('default');
   fails(() => updateProfile({ action: 'delete', id: p.id, expectedVersion: p.version }), 400);
   fails(() => updateProfile({ action: 'delete', id: p.id, expectedVersion: p.version, confirm: true }), 400);
-  updateProfile({ action: 'delete', id: p.id, expectedVersion: p.version, confirm: true, fallbackId: 'direct' });
-  assert.equal(snapshot().selected, 'direct');
-  updateProfile({ action: 'delete', id: 'eval', confirm: true });
-  fails(() => updateProfile({ action: 'delete', id: 'direct', confirm: true, fallbackId: 'missing' }), 400);
+  updateProfile({ action: 'delete', id: p.id, expectedVersion: p.version, confirm: true, fallbackId: second });
+  assert.equal(snapshot().selected, second);
+  updateProfile({ action: 'delete', id: third, confirm: true });
+  fails(() => updateProfile({ action: 'delete', id: second, confirm: true, fallbackId: 'missing' }), 400);
   assert.equal(snapshot().profiles.length, 1);
 });
 

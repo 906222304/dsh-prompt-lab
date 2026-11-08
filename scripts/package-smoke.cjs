@@ -4,7 +4,7 @@ const {execFileSync}=require('node:child_process'),{pathToFileURL}=require('node
 async function main(){
   const project=path.resolve(__dirname,'..'),version=require('../package.json').version;
   const archive=path.resolve(process.argv[2]||path.join(project,`dsh-prompt-lab-${version}.tgz`));
-  const baselineArchive=path.resolve(process.argv[3]||path.join(project,'dsh-prompt-lab-0.6.3.tgz'));
+  const baselineArchive=path.resolve(process.argv[3]||path.join(project,'dsh-prompt-lab-0.6.4.tgz'));
   const stage=fs.mkdtempSync(path.join(os.tmpdir(),'prompt-lab-package-')),oldHome=process.env.DSH_HOME;
   const extract=(file,to)=>{const entries=execFileSync('tar',['-tzf',file],{encoding:'utf8',windowsHide:true}).trim().split(/\r?\n/);assert.ok(entries.every(e=>e.startsWith('package/')&&!e.split('/').includes('..')));fs.mkdirSync(to,{recursive:true});execFileSync('tar',['-xzf',file,'-C',to],{windowsHide:true});};
   try{
@@ -12,6 +12,7 @@ async function main(){
     process.env.DSH_HOME=path.join(stage,'fixture-home');
     const state=await import(pathToFileURL(path.join(pkg,'lib/state.js'))),plugin=await import(pathToFileURL(path.join(pkg,'lib/index.js')));
     const {Studio}=await import(pathToFileURL(path.join(pkg,'lib/studio/jobs.js'))),{RevisionStore}=await import(pathToFileURL(path.join(pkg,'lib/studio/revisions.js')));
+    state.initialize();const fresh=state.snapshot();assert.equal(fresh.profiles.length,1);assert.equal(fresh.profiles[0].name,'越狱破甲');assert.equal(require('node:crypto').createHash('sha256').update(fresh.profiles[0].prompt).digest('hex'),'111bcf3a26ec7e300d592e298231fe7d611526de3b86c1cdd1002c94d89536ed');state.resetForTests();
     const sections={};plugin.apply({systemPrompt:{section:s=>{sections[s.name]=s;}},on(){}},{prompt:'BASELINE'});
     const ruleId=state.updateRule({action:'create',name:'Shared fixture',text:'shared policy'}).editedRuleId;
     let base=state.snapshot().profiles[0];state.updateProfile({action:'save',...base,ruleIds:[ruleId],expectedVersion:base.version});base=state.snapshot().profiles[0];
@@ -54,13 +55,13 @@ async function main(){
     const dataRoot=state.studioStorageDirectory(),backup=path.join(stage,'full-data-backup');fs.cpSync(dataRoot,backup,{recursive:true});
     const hashes=dir=>{const rows=[];function visit(folder){for(const e of fs.readdirSync(folder,{withFileTypes:true})){const file=path.join(folder,e.name);if(e.isDirectory())visit(file);else rows.push([path.relative(dir,file),require('node:crypto').createHash('sha256').update(fs.readFileSync(file)).digest('hex')]);}}visit(dir);return rows.sort((a,b)=>a[0].localeCompare(b[0]));};const beforeBackup=hashes(dataRoot);
     const baselineStage=path.join(stage,'baseline');extract(baselineArchive,baselineStage);
-    const old=await import(pathToFileURL(path.join(baselineStage,'package/lib/index.js'))),oldState=await import(pathToFileURL(path.join(baselineStage,'package/lib/state.js'))),oldSections={};
-    old.apply({systemPrompt:{section:s=>{oldSections[s.name]=s;}},on(){}},{});assert.equal(oldState.snapshot().version,'0.6.3');assert.equal(oldSections['prompt-lab:custom'].text(),'IMPROVED');assert.ok(oldSections['prompt-lab:rules'].text().includes('shared policy'));assert.equal(oldState.snapshot().profiles.length,state.snapshot().profiles.length);
+    const baselineVersion=JSON.parse(fs.readFileSync(path.join(baselineStage,'package/package.json'))).version;const old=await import(pathToFileURL(path.join(baselineStage,'package/lib/index.js'))),oldState=await import(pathToFileURL(path.join(baselineStage,'package/lib/state.js'))),oldSections={};
+    old.apply({systemPrompt:{section:s=>{oldSections[s.name]=s;}},on(){}},{});assert.equal(oldState.snapshot().version,baselineVersion);assert.equal(oldSections['prompt-lab:custom'].text(),'IMPROVED');assert.ok(oldSections['prompt-lab:rules'].text().includes('shared policy'));assert.equal(oldState.snapshot().profiles.length,state.snapshot().profiles.length);
     assert.equal(oldSections['prompt-lab:custom'].text({agent:{session:{id:'package-pin'}}}),'BASELINE','0.6.3 retains existing session pins');
-    const {SuiteStore:OldSuiteStore}=await import(pathToFileURL(path.join(baselineStage,'package/lib/studio/suites.js')));assert.equal(new OldSuiteStore(state.studioStorageDirectory()).get(failure.id).version,2);assert.throws(()=>new OldSuiteStore(state.studioStorageDirectory()).get(v3.id));
+    const {SuiteStore:OldSuiteStore}=await import(pathToFileURL(path.join(baselineStage,'package/lib/studio/suites.js')));assert.equal(new OldSuiteStore(state.studioStorageDirectory()).get(failure.id).version,2);if(baselineVersion==='0.6.3')assert.throws(()=>new OldSuiteStore(state.studioStorageDirectory()).get(v3.id));else assert.equal(new OldSuiteStore(state.studioStorageDirectory()).get(v3.id).version,3);
     const changed=oldState.snapshot().profiles[0];oldState.updateProfile({action:'save',...changed,prompt:'ROLLBACK_TEST',expectedVersion:changed.version});assert.notDeepEqual(hashes(dataRoot),beforeBackup);assert.ok(path.relative(path.join(stage,'fixture-home'),dataRoot)&&!path.relative(path.join(stage,'fixture-home'),dataRoot).startsWith('..'));fs.rmSync(dataRoot,{recursive:true,force:true});fs.cpSync(backup,dataRoot,{recursive:true});assert.deepEqual(hashes(dataRoot),beforeBackup);
     state.initialize();assert.equal(sections['prompt-lab:custom'].text({agent:{session:{id:'package-pin'}}}),'BASELINE');assert.equal(engine.suites.get(failure.id).version,2);
-    engine.dispose();console.log(JSON.stringify({ok:true,version,archiveRuntime:true,optimization:true,heldOutExcluded:true,adoption:true,restore:true,actual063ReadsCoreAssets:true,workspace:true,sessionPinReload:true,regressionV2:true,scenario:true,baselineKeepsPinAndV2RejectsV3:true,portableGraphRoundTrip:true,importRecoveryAndRetry:true,scenarioRefresh:true,fullBackupByteRestore:true}));
+    engine.dispose();console.log(JSON.stringify({ok:true,version,archiveRuntime:true,optimization:true,heldOutExcluded:true,adoption:true,restore:true,baselineVersion,baselineReadsCoreAssets:true,oneFreshDefault:true,frozenDefaultHashMatched:true,workspace:true,sessionPinReload:true,regressionV2:true,scenario:true,baselineKeepsPinAndV2:true,baselineV3Readable:baselineVersion!=='0.6.3',portableGraphRoundTrip:true,importRecoveryAndRetry:true,scenarioRefresh:true,fullBackupByteRestore:true}));
   }finally{if(oldHome===undefined)delete process.env.DSH_HOME;else process.env.DSH_HOME=oldHome;
     assert.equal(path.dirname(path.resolve(stage)),path.resolve(os.tmpdir()));assert.ok(path.basename(stage).startsWith('prompt-lab-package-'));fs.rmSync(stage,{recursive:true,force:true});}
 }

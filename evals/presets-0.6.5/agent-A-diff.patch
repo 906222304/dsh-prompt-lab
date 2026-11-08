@@ -1,0 +1,18 @@
+diff --git a/pricing.py b/pricing.py
+index 205b0ea..0f8b281 100644
+--- a/pricing.py
++++ b/pricing.py
+@@ -1,6 +1,12 @@
+ def subtotal(items):
++    if items is None:
++        return 0
+     total = 0
+     for item in items:
+-        quantity = item.get("quantity") or 1
++        quantity = item.get("quantity")
++        if quantity is None:
++            quantity = 1
++        if quantity < 0:
++            raise ValueError("quantity must not be negative")
+         total += item["price"] * quantity
+     return total

@@ -1,0 +1,11 @@
+test_default_quantity (test_pricing.SubtotalTests.test_default_quantity) ... ok
+test_empty (test_pricing.SubtotalTests.test_empty) ... ok
+test_negative_quantity (test_pricing.SubtotalTests.test_negative_quantity) ... ok
+test_no_mutation (test_pricing.SubtotalTests.test_no_mutation) ... ok
+test_none (test_pricing.SubtotalTests.test_none) ... ok
+test_zero_quantity (test_pricing.SubtotalTests.test_zero_quantity) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.000s
+
+OK

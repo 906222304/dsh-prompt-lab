@@ -144,8 +144,9 @@ plugin.apply({effect:fn=>fn(),slots:{inject(name,fn){fn()},register(options,rend
     };
     const text=()=>page.evaluate('document.body.innerText');
     const next=async()=>delay(150);
+    const initialProfileCount=state.snapshot().profiles.length;
     await fill('[aria-label="配置名称"]','浏览器方案');await next();await click('新建配置');
-    await wait(()=>state.snapshot().profiles.length===4,'profile created');await next();
+    await wait(()=>state.snapshot().profiles.length===initialProfileCount+1,'profile created');await next();
     const id=state.snapshot().profiles.at(-1).id;
     await fill('textarea','browser body');await fill('textarea.rules','browser legacy');await next();await click('保存配置');
     await wait(()=>state.snapshot().profiles.find(p=>p.id===id).prompt==='browser body','profile saved');await next();
@@ -191,7 +192,7 @@ plugin.apply({effect:fn=>fn(),slots:{inject(name,fn){fn()},register(options,rend
     await wait(async()=>(await text()).includes('其他窗口'),'save conflict');
     assert.equal(await page.evaluate(`document.querySelector('textarea').value`),'unsaved browser');
     await click('载入最新版本');await next();assert.equal(await page.evaluate(`document.querySelector('textarea').value`),'other window');
-    await click('复制已保存配置');await wait(()=>state.snapshot().profiles.length===5,'profile copy');await next();
+    await click('复制已保存配置');await wait(()=>state.snapshot().profiles.length===initialProfileCount+2,'profile copy');await next();
     await fill('[aria-label="配置名称"]','副本方案');await next();await click('重命名');await wait(()=>state.snapshot().profiles.some(p=>p.name==='副本方案'),'profile rename');await next();
     await click('导出此配置');
     await wait(()=>fs.readdirSync(downloads).some(p=>p.endsWith('.json')),'JSON download');
@@ -200,12 +201,12 @@ plugin.apply({effect:fn=>fn(),slots:{inject(name,fn){fn()},register(options,rend
     await click('导入导出');await next();
     const doc=await page.call('DOM.getDocument');const input=await page.call('DOM.querySelector',{nodeId:doc.root.nodeId,selector:'[aria-label="选择配置或规则 JSON 文件"]'});
     await page.call('DOM.setFileInputFiles',{nodeId:input.nodeId,files:[exportFile]});
-    await wait(async()=>(await text()).includes('导入预览'),'import preview');assert.equal(state.snapshot().profiles.length,5);
-    await click('确认追加导入');await wait(()=>state.snapshot().profiles.length===6,'import commit');await next();
+    await wait(async()=>(await text()).includes('导入预览'),'import preview');assert.equal(state.snapshot().profiles.length,initialProfileCount+2);
+    await click('确认追加导入');await wait(()=>state.snapshot().profiles.length===initialProfileCount+3,'import commit');await next();
     assert.equal(state.snapshot().ruleSets.length,4);assert.equal(state.snapshot().selected,id);
     await click('提示词与规则');await next();
     await select('[aria-label="选择编辑的配置"]',id);await next();await click('删除配置');
-    await wait(()=>state.snapshot().profiles.length===5,'active profile delete');await next();assert.equal(state.snapshot().selected,'default');
+    await wait(()=>state.snapshot().profiles.length===initialProfileCount+2,'active profile delete');await next();assert.equal(state.snapshot().selected,'default');
     await fill('textarea','草稿恢复');await next();await page.evaluate('window.__qaUnmount()');await next();await page.evaluate('window.__qaRender()');
     await wait(()=>page.evaluate(`document.querySelector('textarea')?.value==='草稿恢复'`),'draft restored after unmount');
     await fill('textarea','你是一位严谨、可靠的开发助手。\n\n工作方式\n• 先确认目标与已有上下文，再开始实施。\n• 优先给出具体、可验证的方案。\n• 将观察结果、推断和未验证假设明确区分。\n\n交付要求\n使用简体中文，保持回答简洁。完成后说明变更与验证结果。');

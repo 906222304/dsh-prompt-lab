@@ -20,7 +20,7 @@ test('session pins freeze complete assets, survive reload, isolate sessions and 
  assert.equal(state.snapshot().evaluation.sessionId,'b');state.evaluate({agent:{session:{id:'a'}}});assert.equal(state.snapshot().diagnostics.evaluated.binding.profileVersion,preview.draft.profile.version);
  state.initialize();assert.equal(state.evaluate({agent:{session:{id:'a'}}}),ap);assert.equal(state.evaluate({agent:{session:{id:'b'}}}),bp);
  assert.equal(state.evaluate({agent:{session:{id:'child-a'}}}),bp,'no implicit subagent inheritance');
- const fallback=state.snapshot().profiles.find(v=>v.id!==p.id);state.updateProfile({action:'delete',id:p.id,confirm:true,fallbackId:fallback.id});
+ const fallbackId=state.updateProfile({action:'create',name:'Synthetic fallback',prompt:'fallback'}).editedId;const fallback=state.snapshot().profiles.find(v=>v.id===fallbackId);state.updateProfile({action:'delete',id:p.id,confirm:true,fallbackId:fallback.id});
  const removable=state.snapshot().ruleSets.find(v=>v.id===rid);state.updateRule({action:'delete',id:rid,confirm:true,expectedVersion:removable.version});
  assert.equal(state.evaluate({agent:{session:{id:'a'}}}),ap,'deleting original assets leaves the pinned snapshot intact');
  const unboundAfterDelete=state.evaluate({agent:{session:{id:'b'}}});

@@ -93,7 +93,7 @@ async function main() {
     const preview=await fetch(origin+'/prompt-lab/api/import',{method:'POST',headers,body:JSON.stringify({action:'preview',bundle})});
     const plan=(await preview.json()).preview;
     const imported=await fetch(origin+'/prompt-lab/api/import',{method:'POST',headers,body:JSON.stringify({action:'commit',bundle,expectedStoreVersion:plan.storeVersion})});
-    assert.equal(imported.status,200);assert.equal(state.snapshot().profiles.length,4);
+    assert.equal(imported.status,200);assert.equal(state.snapshot().profiles.length,2);
     assert.equal(state.snapshot().selected,'default');
     assert.equal(fs.existsSync(path.join(temporary,'AGENTS.md')),false);
     assert.equal(fs.existsSync(path.join(temporary,'CLAUDE.md')),false);

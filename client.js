@@ -1151,7 +1151,7 @@ window.__ModuleLoader__.load({
                     h("div", { className: "pl-diagnostic-row" }, h("span", null, "本次上下文过滤"), h("span", null,
                       ({ off: "原样保留", strip: "整组移除", redact: "隐藏具体值" }[assembly.contextFilter] || "未知") + ` · 去除 ${assembly.contextsRemoved || 0} 条 · 剩余 ${assembly.contextCount || 0} 条`)),
                     h("div", { className: "pl-diagnostic-row" }, h("span", null, "本次身份句处理"), h("span", null, `命中 ${assembly.identityBroken || 0} 个段/条目（零命中不代表开关关闭）`))) : null)))) : null)),
-        h("footer", { className: "pl-foot" }, h("span", null, "全局默认 · " + (activeProfile?.name || "正在连接")), h("span", null, "v" + (data?.version || "0.6.4") + (data ? " · 更新于 " + timeText(data.generatedAt) : ""))),
+        h("footer", { className: "pl-foot" }, h("span", null, "全局默认 · " + (activeProfile?.name || "正在连接")), h("span", null, "v" + (data?.version || "0.6.5") + (data ? " · 更新于 " + timeText(data.generatedAt) : ""))),
         studioOptions&&data?h(StudioPanel,{initialOperation:studioOptions.operation,sourceRuleIds:studioOptions.sourceRuleIds,getContext:studioContext,onCommitted:acceptData,cache,targetSessionId,currentScope,onBind:id=>{setBindingProfileId(id);setStudioOptions(null);setBindingsOpen(true);},
           onOpenProfile:openStudioProfile,onReplace:replaceFromCandidate,onClose:()=>setStudioOptions(null)}):null,
         bindingsOpen&&data?h(SessionBindings,{data,profileId:bindingProfileId||editId,initialSessionId:targetSessionId,onCommitted:acceptData,onClose:()=>{setBindingsOpen(false);setBindingProfileId(null);}}):null,

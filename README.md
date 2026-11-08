@@ -177,3 +177,10 @@ npm run test:rollback      # 需要本地 0.4.9 tgz，使用隔离夹具验证�
 导入导出页增加独立的完整资产包，涵盖冻结依赖、测试集、场景、待适用记录和可选只读证据。原配置/规则 JSON 入口保持兼容。新增 `POST /prompt-lab/api/assets` 的 `assets.export`、`assets.preview`、`assets.commit`，上限 32 MiB；提交使用预览 token，事务中断恢复后重试不会重复追加。`GET /prompt-lab/api/studio?kind=scope&id=...` 只读会话元数据和范围，`kind=imported-assets` 按需读取导入提示与证据。场景新增 `scenario.refresh.preview` / `scenario.refresh`，预览差异后另存。
 
 详细步骤、原文范围、容量和回退边界见 [完整资产与会话工作流](docs/assets-guide.zh-CN.md)，本轮真实运行记录见 [0.6.3 实际验收](docs/runtime-acceptance-0.6.3.md)，交付状态见 [0.6.4 交付记录](docs/release-0.6.4.md)。
+
+
+## 默认配置调整（2026-11-08）
+
+新安装仅提供“越狱破甲”，正文为本机用户明确指定保留的第一套 dsh-purge 配置，包含第三方署名与许可文件。初始化不覆盖已保存配置；显式 config.prompt 仍可自定义首次正文。旧“增强 · 直接执行”和“授权测试 · 红队评测”不再作为内置默认自动生成。
+
+当前实例已备份后删除那两套配置；其他已有数据不会在升级时自动删除。其他项目的可借鉴方式及未加入面板的候选文本见 [默认配置与开源参考](docs/prompt-presets-review.zh-CN.md)。
